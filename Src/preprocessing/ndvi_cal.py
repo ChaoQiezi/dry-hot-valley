@@ -1,71 +1,45 @@
 import ee
-import geemap
+from datetime import datetime
 
-from utils import calculate_ndvi, cloud_mask_s2
-from qiezi.ee_utils import ee_export_image
+from utils import cal_ndvi, cloud_mask_by_probability
+from qiezi.ee_utils import ee_export_image, image_float2int
 
 # 准备
 ee.Initialize(project='chaoqiezipython')
 region_dir = 'projects/chaoqiezipython/assets/region/Chuanxi'
+s2_dir = 'COPERNICUS/S2_SR_HARMONIZED'  # Sentinel-2 SR HARMONIZED
+s2_cloud_dir = r'COPERNICUS/S2_CLOUD_PROBABILITY'  # Sentinel-2 Cloud Probability
 # region = ee.Geometry.Rectangle([103.4, 31.2, 103.8, 31.6])  # 川西某一区域
-# region = ee.Geometry.Rectangle([97.247493, 25.948207, 104.534109, 34.415239])  # 川西某一区域
+# region = ee.Geometry.Rectangle([97.247493, 25.948207, 104.534109, 34.415239])  # 川西地区外接矩形范围
 region = ee.FeatureCollection(region_dir)  # 川西地区
-start_date = '2023-06-01'
-end_date = '2023-09-30'
-sentinel_2_dir = 'COPERNICUS/S2_SR_HARMONIZED'
-cloud_threshold = 20  # 场景级云量阈值(%)
+start_date_str = '2023-01-01'
+end_date_str = '2023-12-31'
+start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+max_cloud_probability = 65  # 云概率阈值(%)
 
-# 场景级云过滤(剔除高云量影像)
-sentinel_2 = (ee.ImageCollection(sentinel_2_dir)
-              .filterDate(start_date, end_date)
-              .filterBounds(region)
-              .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', cloud_threshold)))
-print(f'过滤后影像数量: {sentinel_2.size().getInfo()}')
-
-# 像素级云掩膜
-sentinel_2_masked = sentinel_2.map(cloud_mask_s2)
-
-# 计算NDVI
-sentinel_2_ndvi = sentinel_2_masked.map(calculate_ndvi)
-
-# MVC合成和裁剪
-# ndvi_composite = sentinel_2_ndvi.select('NDVI').median().clip(region)
-ndvi_composite = sentinel_2_ndvi.select('NDVI').max().clip(region)
-
-# 可视化
-ndvi_vis = {
-    'min': -0.2,
-    'max': 0.9,
-    'palette': [
-        '#d73027',  # 极低NDVI (裸地/水体)
-        '#fc8d59',  # 低NDVI
-        '#fee08b',  # 中低NDVI
-        '#d9ef8b',  # 中NDVI
-        '#91cf60',  # 中高NDVI
-        '#1a9850',  # 高NDVI (密集植被)
-    ]
-}
-# 可视化
-Map = geemap.Map()
-Map.centerObject(region, zoom=10)
-Map.addLayer(ndvi_composite, ndvi_vis, 'NDVI (中值合成)')
-Map.addLayer(region, {'color': 'red'}, '研究区域', opacity=0.3)
-Map.addLayerControl()
-Map
-
-# 统计
-stats = ndvi_composite.reduceRegion(
-    reducer=ee.Reducer.mean()
-    .combine(ee.Reducer.minMax(), sharedInputs=True)  # sharedInputs=True
-    .combine(ee.Reducer.stdDev(), sharedInputs=True),
-    geometry=region,
-    scale=10,  # Sentinel-2 B4/B8分辨率为10m
-    maxPixels=1e9
+# 时间和空间过滤
+filter_criteria = ee.Filter.And(
+    ee.Filter.bounds(region),
+    ee.Filter.date(start_date_str, end_date_str),
 )
-print(f'均值:   {stats.get("NDVI_mean").getInfo():.4f}')
-print(f'最小值: {stats.get("NDVI_min").getInfo():.4f}')
-print(f'最大值: {stats.get("NDVI_max").getInfo():.4f}')
-print(f'标准差: {stats.get("NDVI_stdDev").getInfo():.4f}')
+s2 = (ee.ImageCollection(s2_dir)
+      .filter(filter_criteria)
+      .select(['B4', 'B8']))
+s2_cloud = ee.ImageCollection(s2_cloud_dir).filter(filter_criteria)
+# 整合s2和s2cloudless
+match_criteria = ee.Filter.equals(leftField='system:index', rightField='system:index')
+s2_with_cloud = ee.Join.saveFirst('cloud_mask').apply(primary=s2, secondary=s2_cloud, condition=match_criteria)
+s2_with_cloud = ee.ImageCollection(s2_with_cloud)
+# 像素级云掩膜
+s2_masked = s2_with_cloud.map(cloud_mask_by_probability)
+# 计算NDVI
+s2_ndvi = s2_masked.map(cal_ndvi)
+# MVC最大值合成和裁剪
+ndvi_composite = s2_ndvi.select('NDVI').max().clip(region)
+# 缩放
+ndvi_scaled = image_float2int(ndvi_composite, scale_factor=10000, int_type='int16')
 
 # 导出下载
-ee_export_image(ndvi_composite, 'Chuanxi_NDVI', 'NDVI', scale=10, region=region)
+ee_export_image(ndvi_scaled, 'Chuanxi_NDVI', 'NDVI_{}'.format(start_date.year), scale=10, region=region,
+                set_COG=False, no_data_value=-32767)
