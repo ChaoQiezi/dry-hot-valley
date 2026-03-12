@@ -10,6 +10,8 @@ This script is used to 定义一些通用的函数.
 
 import os
 import re
+
+import ee
 import numpy as np
 from osgeo import gdal, osr
 import rasterio as rio
@@ -18,7 +20,7 @@ import Config
 from qiezi import read_sinu_info, read_h4_var, write_tiff
 
 
-def cloud_mask_s2(image):
+def cloud_mask_by_scl(image: ee.Image):
     """
     基于SCL(Scene Classification Layer)波段进行像素级云掩膜.
     SCL分类值说明:
@@ -41,11 +43,21 @@ def cloud_mask_s2(image):
     return image.updateMask(valid_mask)
 
 
-def calculate_ndvi(image):
+def cloud_mask_by_probability(image: ee.Image, max_cloud_probability=65.0):
+    """基于Sentinel-2: Cloud Probability进行像素级云掩膜"""
+
+    cloud_mask = ee.Image(image.get('cloud_mask')).select(['probability'])
+    not_cloud = cloud_mask.lt(max_cloud_probability)
+
+    return image.updateMask(not_cloud)
+
+
+def cal_ndvi(image):
     """
     基于Sentinel-2的B8(NIR, 842nm)和B4(Red, 665nm)计算NDVI.
     NDVI = (B8 - B4) / (B8 + B4)
     """
+
     ndvi = image.normalizedDifference(['B8', 'B4']).rename('NDVI')
     return image.addBands(ndvi)
 

@@ -21,7 +21,7 @@
 5. 最终植被差异以什么形式来呈现, 哪种图哪种表格呢?
 
 
-## 2026/03/07 情况说明
+# 2026/03/07 情况说明
 
 1. 关于迎风坡和背风坡, 考虑使用saga-gis的Wind Effect根据来划分;
    或者这样考虑更好: 直接分8个坡向和平地, 而只在论文阐述上说明迎风坡和背风坡;
@@ -30,12 +30,45 @@
 4. 时间尺度是多少呢?是一个月?一个季节?还是分雨季和旱季呢?或者干脆一年?
 
 
-## 2026/03/09 情况说明
+# 2026/03/09 情况说明
 
 1. 关于时间尺度, 目前按照年尺度先进行研究;
 2. 对于已经下载的ALOS DEM数据集(大概率弃用), 虽然其标注了12.5m分辨率的数据集, 但是实际上对于中国及其其他大部分区域, 都是
 基于SRTM数据集的30m分辨率上采样得来的, 具体见官方文档(https://asf.alaska.edu/wp-content/uploads/2019/03/rtc_product_guide_v1.2.pdf):
 Assets/Ref/rtc_product_guide_v1.2.pdf; 因此实际上后续研究, 目前(2026/03/09)我们考虑的DEM数据集是使用GLO-30产品, 
 从OpenTopography下载(搜索GLO-30即可): https://portal.opentopography.org/dataCatalog
+3. 基于GLO-30 DEM产品进行裁剪、掩膜和重采样(10m)以及表面参数计算, 得到DEM、坡度、坡向
 
+
+# 2026/03/10 情况说明
+
+1. 目前处理年尺度的NDVI, GEE处一年数据需要约2h左右.
+2. 关于sentinel-2的去云使用s2cloudless产品, 具体见: https://github.com/sentinel-hub/sentinel2-cloud-detector?tab=readme-ov-file
+3. 关于迎风坡和背风坡, 还是着手考虑如何划分!
+   目前打算使用saga-gis的Wind Effect工具进行, 见: https://saga-gis.sourceforge.io/saga_tool_doc/2.1.3/ta_morphometry_15.html
+   另外需要注意这个wind effect是不是就是风坡夹角或者风效因子, 风坡夹角参考: https://www.cnblogs.com/ChaoQiezi/p/18980920
+   关于wind effect, 需要输入风向和风速(例如era5),以及坡向数据; 
+
+
+# 2026/03/11 情况说明
+
+1. GAI(greenness asymmetric index, 绿度不对称指数), 公式为: GAI = NDVI_PFS / NDVI_EFS
+2. GDI(greenness difference index, 绿度差异指数), 公式为: GDI = (NDVI_EFS − NDVI_PFS)/(NDVI_EFS + NDVI_PFS).
+3. 目前可能还需要考虑一下是否针对川西地区所有地类进行? 还是只针对和植被相关的地类进行研究呢?
+
+
+# 2026/3/12 情况说明
+
+1. 迎风坡和背风坡的划分
+   
+    目前搜集了相关文献, 已经确定使用SAGA GIS的Wind Effect(Windward, Leeward)风效应指数工具进行迎风坡和背风坡的划分
+    - 使用数据包括: DEM、ERA5的600hPa(pressure level)的u, v风场数据;
+    - 时间维度上的处理, 取多年生长季(6-8月)的u、v均值(基于风速加权), 计算风向数据, 进而计算风效应指数;
+    - 空间尺度上的处理, 统一在10m分辨率、投影坐标系上计算风效应指数;
+    - 迎风坡和背风坡划分, 根据SAGA GIS说明>1表示处在迎风区, <1表示背风区;
+    > The 'Wind Effect' is a dimensionless index. Values below 1 indicate wind shadowed areas whereas values above 1 
+    > indicate areas exposed to wind
+
+    参考文献:
+    > Gerlitz-2015, Bohner-2006, Bohner-2009, Karger-2017;
 
