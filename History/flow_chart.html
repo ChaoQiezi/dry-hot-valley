@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>组会汇报 - 技术路线图</title>
+    <style>
+        body { margin: 0; padding: 40px; background-color: #ffffff; display: flex; justify-content: center; }
+        svg { max-width: 1200px; width: 100%; height: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.06); border: 1px solid #f0f0f0; padding: 20px; border-radius: 4px; }
+        text { font-family: "Helvetica Neue", "Microsoft YaHei", Arial, sans-serif; }
+    </style>
+</head>
+<body>
+
+<svg viewBox="0 0 1150 550" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <!-- 实线箭头 -->
+        <marker id="arrow-solid" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#334155" />
+        </marker>
+        <!-- 虚线箭头 -->
+        <marker id="arrow-dashed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#94A3B8" />
+        </marker>
+        <!-- 节点阴影 -->
+        <filter id="shadow" x="-5%" y="-5%" width="115%" height="115%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.05" />
+        </filter>
+    </defs>
+
+    <!-- 顶部主标题 (组会风格，严谨务实) -->
+<!--    <text x="575" y="40" font-size="22" font-weight="bold" fill="#0F172A" text-anchor="middle" letter-spacing="1">基于多源数据的复杂地形风效应与植被 NDVI 处理流程</text>-->
+
+    <!-- 阶段划分抬头 -->
+    <rect x="100" y="65" width="100" height="24" fill="#F1F5F9" rx="12" />
+    <text x="150" y="82" font-size="13" font-weight="bold" fill="#475569" text-anchor="middle">1. 数据准备</text>
+
+    <rect x="370" y="65" width="100" height="24" fill="#F1F5F9" rx="12" />
+    <text x="420" y="82" font-size="13" font-weight="bold" fill="#475569" text-anchor="middle">2. 预处理</text>
+
+    <rect x="640" y="65" width="100" height="24" fill="#F1F5F9" rx="12" />
+    <text x="690" y="82" font-size="13" font-weight="bold" fill="#475569" text-anchor="middle">3. 参数计算</text>
+
+    <rect x="910" y="65" width="100" height="24" fill="#F1F5F9" rx="12" />
+    <text x="960" y="82" font-size="13" font-weight="bold" fill="#475569" text-anchor="middle">4. 空间建模</text>
+
+    <!-- 阶段分割虚线 -->
+    <line x1="285" y1="60" x2="285" y2="520" stroke="#E2E8F0" stroke-width="2" stroke-dasharray="8,6" />
+    <line x1="555" y1="60" x2="555" y2="520" stroke="#E2E8F0" stroke-width="2" stroke-dasharray="8,6" />
+    <line x1="825" y1="60" x2="825" y2="520" stroke="#E2E8F0" stroke-width="2" stroke-dasharray="8,6" />
+
+    <!-- ==================== 绘制连线 ==================== -->
+
+    <!-- 主横向直连线 -->
+    <path d="M 250 145 L 320 145" stroke="#334155" stroke-width="1.5" fill="none" marker-end="url(#arrow-solid)" />
+    <path d="M 250 295 L 320 295" stroke="#334155" stroke-width="1.5" fill="none" marker-end="url(#arrow-solid)" />
+    <path d="M 250 445 L 320 445" stroke="#334155" stroke-width="1.5" fill="none" marker-end="url(#arrow-solid)" />
+
+    <path d="M 520 145 L 590 145" stroke="#334155" stroke-width="1.5" fill="none" marker-end="url(#arrow-solid)" />
+    <path d="M 520 445 L 590 445" stroke="#334155" stroke-width="1.5" fill="none" marker-end="url(#arrow-solid)" />
+    <path d="M 790 445 L 860 445" stroke="#334155" stroke-width="1.5" fill="none" marker-end="url(#arrow-solid)" />
+
+    <!-- 垂直连接线 (SAGA模型 -> 二分类划分) -->
+    <path d="M 960 410 L 960 330" stroke="#334155" stroke-width="1.5" fill="none" marker-end="url(#arrow-solid)" />
+
+    <!-- 跨阶段辅助线 (地形约束条件提供) -->
+    <!-- DEM -> 风向计算 (10m像元掩膜) -->
+    <path d="M 520 295 L 555 295 L 555 430 L 590 430" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="5,4" fill="none" marker-end="url(#arrow-dashed)" />
+    <rect x="528" y="340" width="54" height="18" fill="#ffffff" rx="2" />
+    <text x="555" y="353" font-size="11" fill="#64748B" text-anchor="middle">10m 掩膜</text>
+
+    <!-- DEM -> SAGA (坡度/坡向提取) -->
+    <path d="M 520 315 L 825 315 L 825 430 L 860 430" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="5,4" fill="none" marker-end="url(#arrow-dashed)" />
+    <rect x="635" y="306" width="110" height="18" fill="#ffffff" rx="2" />
+    <text x="690" y="319" font-size="11" fill="#64748B" text-anchor="middle">提供地形因子 (坡度/坡向)</text>
+
+
+    <!-- ==================== 定义容器样式 ==================== -->
+    <style>
+        .box { fill: #ffffff; stroke-width: 1.5px; rx: 4px; ry: 4px; filter: url(#shadow); }
+        .box-data { stroke: #64748B; }           /* 数据源: 经典灰框 */
+        .box-proc { stroke: #0284C7; fill: #F0F9FF; }  /* 预处理与计算: 清晰蓝底 */
+        .box-out { stroke: #16A34A; stroke-width: 2px; fill: #F0FDF4; } /* 成果节点: 醒目绿底粗框 */
+
+        .t-title { font-size: 14px; font-weight: bold; text-anchor: middle; }
+        .t-sub { font-size: 11px; fill: #475569; text-anchor: middle; }
+        .t-detail { font-size: 10px; fill: #94A3B8; text-anchor: middle; font-style: italic; }
+    </style>
+
+    <!-- 列 1: 多源数据获取 -->
+    <g transform="translate(50, 110)">
+        <rect class="box box-data" width="200" height="70" />
+        <text x="100" y="26" class="t-title" fill="#1E293B">Sentinel-2 L2A 多光谱</text>
+        <text x="100" y="46" class="t-sub">表面反射率与云概率集合</text>
+        <text x="100" y="60" class="t-detail">(10m 分辨率 | 2017-2025)</text>
+    </g>
+    <g transform="translate(50, 260)">
+        <rect class="box box-data" width="200" height="70" />
+        <text x="100" y="26" class="t-title" fill="#1E293B">GLO-30 数字高程模型</text>
+        <text x="100" y="46" class="t-sub">Copernicus 高精度地形数据</text>
+        <text x="100" y="60" class="t-detail">(30m 分辨率 | 空间分析基准)</text>
+    </g>
+    <g transform="translate(50, 410)">
+        <rect class="box box-data" width="200" height="70" />
+        <text x="100" y="26" class="t-title" fill="#1E293B">ERA5 月均气候资料</text>
+        <text x="100" y="46" class="t-sub">多气压层风场 u/v 分量</text>
+        <text x="100" y="60" class="t-detail">(0.25° 分辨率 | 2017-2025)</text>
+    </g>
+
+    <!-- 列 2: 时空预处理 -->
+    <g transform="translate(320, 110)">
+        <rect class="box box-proc" width="200" height="70" />
+        <text x="100" y="26" class="t-title" fill="#0369A1">像元去云与 MVC 合成</text>
+        <text x="100" y="46" class="t-sub">基于 GEE 概率阈值 &lt; 65%</text>
+        <text x="100" y="60" class="t-detail">(提取 5-9 月 NDVI 最大值)</text>
+    </g>
+    <g transform="translate(320, 260)">
+        <rect class="box box-proc" width="200" height="70" />
+        <text x="100" y="26" class="t-title" fill="#0369A1">WGS84 重投影与裁切</text>
+        <text x="100" y="46" class="t-sub">统一坐标与空间范围</text>
+        <text x="100" y="60" class="t-detail">(确立 10m 像元对齐网络)</text>
+    </g>
+    <g transform="translate(320, 410)">
+        <rect class="box box-proc" width="200" height="70" />
+        <text x="100" y="26" class="t-title" fill="#0369A1">时序加权平均与重采样</text>
+        <text x="100" y="46" class="t-sub">提取 5-9 月主导风分量</text>
+        <text x="100" y="60" class="t-detail">(GIS 双线性重采样至 10m)</text>
+    </g>
+
+    <!-- 列 3: 参数计算 (含中间结果展示) -->
+    <!-- 重点产出 1: NDVI -->
+    <g transform="translate(590, 110)">
+        <rect class="box box-out" width="200" height="70" />
+        <text x="100" y="26" class="t-title" fill="#15803D">生长季 NDVI 空间分布</text>
+        <text x="100" y="46" class="t-sub">高精度植被表型基底数据集</text>
+        <text x="100" y="60" class="t-detail">(消除云雾干扰的多年际均态)</text>
+    </g>
+
+    <g transform="translate(590, 410)">
+        <rect class="box box-proc" width="200" height="70" />
+        <text x="100" y="26" class="t-title" fill="#0369A1">像元级掩膜与风向计算</text>
+        <text x="100" y="46" class="t-sub">基于 DEM 剔除边界无效值</text>
+        <text x="100" y="60" class="t-detail">(逐像元计算 10m 网格风向)</text>
+    </g>
+
+    <!-- 列 4: 空间建模与最终分类 -->
+    <g transform="translate(860, 410)">
+        <rect class="box box-proc" width="200" height="70" />
+        <text x="100" y="26" class="t-title" fill="#0369A1">SAGA GIS 风效应模拟</text>
+        <text x="100" y="46" class="t-sub">局地地形与盛行风向耦合</text>
+        <text x="100" y="60" class="t-detail">(输出连续型 Wind Effect Index)</text>
+    </g>
+
+    <!-- 重点产出 2: 分类结果 -->
+    <g transform="translate(860, 260)">
+        <rect class="box box-out" width="200" height="70" />
+        <text x="100" y="26" class="t-title" fill="#15803D">迎风坡与背风坡二元划分</text>
+        <text x="100" y="46" class="t-sub">提取生境空间分类 (阈值 > 1.0)</text>
+        <text x="100" y="60" class="t-detail">(为进一步的植被响应分析提供依据)</text>
+    </g>
+
+</svg>
+
+</body>
+</html>
