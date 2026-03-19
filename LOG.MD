@@ -99,3 +99,41 @@ Assets/Ref/rtc_product_guide_v1.2.pdf; 因此实际上后续研究, 目前(2026/
    风坡也不准确;其次, 使用生长季的NDVI可以排除一些其他的干扰, 更好说明该年尺度
    的植被变化;
 3. 聚合方法考虑的是风速加权, 即根据风速对风向进行加权平均, 得到该生长季的风向;
+
+
+2026/3/18 情况说明
+
+1. 目前从gee上下载的NDVI, 存在2017-2018年的数据仅有少部分切片为有效值, 其余切片均为无效值;
+
+
+# 2026/3/19 情况说明
+
+1. 关于2017-2018年的Setinel-2 Level-2A SR数据大量缺失的问题, 实际上是由于
+   欧空局在2018年3月26开始系统性为欧洲提供Level-2A SR数据集, 而对于全球来说
+   目前来看至少在川西地区是2019年实现完全覆盖.
+   具体为:
+
+>The Sentinel-2 L2 data are downloaded from CDSE. They were computed by running sen2cor. WARNING: 2017-2018 L2 coverage in the EE collection is not yet global.
+>New core product (Level-2A surface reflectance)
+
+>generated and distributed since 26 March 2018 for
+>Europe.
+>Sentinel-2 Mission Status
+>Example of Level-2A surface reflectance versus Level-1C (top-of-atmosphere)
+>Copyright: Contains modified Copernicus Sentinel data (2018)
+
+参考见:
+   - Assets/Ref/1-sentinel-2_mission_status_and_dias_overview_v1_gascon_20181009.pdf)
+   - https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S2_SR_HARMONIZED?hl=zh-cn#description
+
+
+解决措施:
+
+   目前来看需要调整时间尺度的范围, 调整为2019年-2025年
+   
+2. 此外，基于目前的的迎/背风坡的划分, 发现迎风坡所处区域的NDVI大都较小,
+   而背风坡所处区域的NDVI大都较大.
+   
+   - 可能是由于海拔跨度比较大, 高山(>5000m)虽然作为迎风坡但是海拔过高气温较低因此NDVI较低;
+   - 可能是由于使用的风场数据是600hPa, 或许应该是使用u10和v10, 或者应该进一步进行文献调研了解wind effect工具传入的风场数据;
+

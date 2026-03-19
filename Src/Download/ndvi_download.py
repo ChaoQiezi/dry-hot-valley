@@ -40,7 +40,7 @@ for year in range(start_date.year, end_date.year + 1):
     s2_with_cloud = ee.Join.saveFirst('cloud_mask').apply(primary=s2, secondary=s2_cloud, condition=match_criteria)
     s2_with_cloud = ee.ImageCollection(s2_with_cloud)
     # 像素级云掩膜
-    s2_masked = s2_with_cloud.map(cloud_mask_by_probability)
+    s2_masked = s2_with_cloud.map(lambda img: cloud_mask_by_probability(img, max_cloud_probability))
     # 计算NDVI
     s2_ndvi = s2_masked.map(cal_ndvi)
     # MVC最大值合成和裁剪
