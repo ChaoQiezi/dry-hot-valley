@@ -98,9 +98,25 @@ def process_modis_land_cover_yearly(hdf_path, out_dir, var_name='LC_Type1'):
     return out_path
 
 
-def img_reproject(in_path, out_path, resample_alg=gdal.GRA_Bilinear, dst_nodata=None):
-    dst_srs = osr.SpatialReference()  # 输出坐标系
-    dst_srs.ImportFromEPSG(4326)
+def img_reproject(in_path, out_path, resample_alg=gdal.GRA_Bilinear, dst_nodata=None, dst_srs=None):
+    """
+    重投影和重采样.
+    :param in_path: 输入数据集路径.
+    :param out_path: 输出数据集路径.
+    :param resample_alg: 重采样算法.
+    :param dst_nodata: 目标数据集的Nodata值.
+    :param dst_srs: 目标数据集的投影信息.
+    :return:
+    """
+
+    if dst_srs is None:
+        dst_srs = osr.SpatialReference()  # 输出坐标系
+        dst_srs.ImportFromEPSG(4326)
+
+    from qiezi import extract_nodata_value
+    if dst_nodata:
+        extract_nodata_value()
+    # 重投影
     warp_options = gdal.WarpOptions(
         format='GTiff',
         outputBounds=Config.out_bounds,
@@ -145,3 +161,4 @@ def img_reclass(in_path, out_path, reclass_rule):
     # 输出
     with rio.open(out_path, 'w', **img_profile)as dst:
         dst.write(img_out, 1)
+

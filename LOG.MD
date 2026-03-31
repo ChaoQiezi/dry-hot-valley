@@ -99,3 +99,98 @@ Assets/Ref/rtc_product_guide_v1.2.pdf; 因此实际上后续研究, 目前(2026/
    风坡也不准确;其次, 使用生长季的NDVI可以排除一些其他的干扰, 更好说明该年尺度
    的植被变化;
 3. 聚合方法考虑的是风速加权, 即根据风速对风向进行加权平均, 得到该生长季的风向;
+
+
+2026/3/18 情况说明
+
+1. 目前从gee上下载的NDVI, 存在2017-2018年的数据仅有少部分切片为有效值, 其余切片均为无效值;
+
+
+# 2026/3/19 情况说明
+
+1. 关于2017-2018年的Setinel-2 Level-2A SR数据大量缺失的问题, 实际上是由于
+   欧空局在2018年3月26开始系统性为欧洲提供Level-2A SR数据集, 而对于全球来说
+   目前来看至少在川西地区是2019年实现完全覆盖.
+   具体为:
+
+>The Sentinel-2 L2 data are downloaded from CDSE. They were computed by running sen2cor. WARNING: 2017-2018 L2 coverage in the EE collection is not yet global.
+>New core product (Level-2A surface reflectance)
+
+>generated and distributed since 26 March 2018 for
+>Europe.
+>Sentinel-2 Mission Status
+>Example of Level-2A surface reflectance versus Level-1C (top-of-atmosphere)
+>Copyright: Contains modified Copernicus Sentinel data (2018)
+
+参考见:
+   - Assets/Ref/1-sentinel-2_mission_status_and_dias_overview_v1_gascon_20181009.pdf)
+   - https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S2_SR_HARMONIZED?hl=zh-cn#description
+
+
+解决措施:
+
+   目前来看需要调整时间尺度的范围, 调整为2019年-2025年
+   
+2. 此外，基于目前的的迎/背风坡的划分, 发现迎风坡所处区域的NDVI大都较小,
+   而背风坡所处区域的NDVI大都较大.
+   
+   - 可能是由于海拔跨度比较大, 高山(>5000m)虽然作为迎风坡但是海拔过高气温较低因此NDVI较低;
+   - 可能是由于使用的风场数据是600hPa, 或许应该是使用u10和v10, 或者应该进一步进行文献调研了解wind effect工具传入的风场数据;
+
+
+# 2026/3/23 情况说明(组会总结)
+
+1. 完成情况:
+   
+   - 完成迎风坡和背风坡的划分(基于Wind Effect风效应指数)
+   - 完成NDVI的下载(2017年-2025年)
+
+2. 老师建议(仅参考)
+
+   - 考虑引入雨季前后的对比;
+   - 进行垂直梯度的对比分析时, 200m的海拔梯度跨度过大, 应设置更小例如50m;
+   - 对于NDVI分析, 分析部分年份也可, 例如2019年-2025年, 前面的2017-2018年考虑丢弃;
+
+
+# 2026/3/25 情况说明
+
+1. 目前已经将从GEE-Drive下载的NDVI数据集进行预处理(但是小于0.1的NDVI设置为nan没有处理);
+2. 今天要完成的是空间尺度上的分析: 
+
+   - 年均值空间分布图(年聚合使用max);
+   - 年际均值空间分布图(年际聚合使用mean);
+   - 空间分布图轴边记录纬度上的NDVI变化;
+
+![空间分布+纬度变化](Assets/Ref/chart_literature/spatial_latitude.png)
+
+
+# 2026/3/28 情况说明
+
+1. 目前已经完成了NDVI年尺度的时间序列变化的绘制;
+
+> --- Mann-Kendall Trend Test Results ---\
+> Trend direction : no trend\
+> p-value         : 1.0000\
+> Kendall tau (τ) : 0.0476\
+> Sen's Slope     : 0.000171  (95% CI: -0.003542 ~ 0.005848)\
+> Sen's Intercept : 0.7357\
+> Significant     : No ✗  (α = 0.05)\
+> Figure saved to: G:\GeoProjects\dry_hot_valley\Result\Chart\NDVI_time_series.png\
+
+![NDVI年尺度时间序列变化](Assets/Result/NDVI_time_series.png)
+
+
+2. 目前已经完成了NDVI年尺度的空间分布图的绘制;
+
+![NDVI年尺度空间分布图](Assets/Result/NDVI_interannual_mean_spatial.png)
+
+
+3. 关于1的NDVI时间序列变化, 没有区分迎风坡和背风坡, 此处仍是进行NDVI时间序列变化分析
+   但是区分迎风坡和背风坡.
+
+![迎/背风坡下NDVI时间序列变化](Assets/Result/NDVI_direction_time_series.png)
+
+
+# 2026/3/29 情况说明
+
+1. 目前正在处理不同海拔梯度下迎风坡和背风坡的NDVI统计值, 并绘制出图;
