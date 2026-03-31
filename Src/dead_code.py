@@ -8,9 +8,13 @@
 This script is used to 
 """
 
-import rasterio
+from pprint import pprint
+from osgeo import gdal
+from rasterio.enums import Resampling
 
-img_path = r'G:\GeoProjects\dry_hot_valley\geo_factor\DEM\GLO-30\elevation_10m_projected.tif'
+img_path = r"E:\MyTEMP\NDVI_preprocessing\NDVI_2019_valid.tif"
 
-with rasterio.open(img_path) as src:
-    print([src.overviews(i) for i in src.indexes])
+ds = gdal.Open(img_path, gdal.GA_ReadOnly)
+ds.BuildOverviews('NEAREST', [2, 4, 8, 16])
+ds = None
+

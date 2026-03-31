@@ -151,3 +151,46 @@ Assets/Ref/rtc_product_guide_v1.2.pdf; 因此实际上后续研究, 目前(2026/
    - 进行垂直梯度的对比分析时, 200m的海拔梯度跨度过大, 应设置更小例如50m;
    - 对于NDVI分析, 分析部分年份也可, 例如2019年-2025年, 前面的2017-2018年考虑丢弃;
 
+
+# 2026/3/25 情况说明
+
+1. 目前已经将从GEE-Drive下载的NDVI数据集进行预处理(但是小于0.1的NDVI设置为nan没有处理);
+2. 今天要完成的是空间尺度上的分析: 
+
+   - 年均值空间分布图(年聚合使用max);
+   - 年际均值空间分布图(年际聚合使用mean);
+   - 空间分布图轴边记录纬度上的NDVI变化;
+
+![空间分布+纬度变化](Assets/Ref/chart_literature/spatial_latitude.png)
+
+
+# 2026/3/28 情况说明
+
+1. 目前已经完成了NDVI年尺度的时间序列变化的绘制;
+
+> --- Mann-Kendall Trend Test Results ---\
+> Trend direction : no trend\
+> p-value         : 1.0000\
+> Kendall tau (τ) : 0.0476\
+> Sen's Slope     : 0.000171  (95% CI: -0.003542 ~ 0.005848)\
+> Sen's Intercept : 0.7357\
+> Significant     : No ✗  (α = 0.05)\
+> Figure saved to: G:\GeoProjects\dry_hot_valley\Result\Chart\NDVI_time_series.png\
+
+![NDVI年尺度时间序列变化](Assets/Result/NDVI_time_series.png)
+
+
+2. 目前已经完成了NDVI年尺度的空间分布图的绘制;
+
+![NDVI年尺度空间分布图](Assets/Result/NDVI_interannual_mean_spatial.png)
+
+
+3. 关于1的NDVI时间序列变化, 没有区分迎风坡和背风坡, 此处仍是进行NDVI时间序列变化分析
+   但是区分迎风坡和背风坡.
+
+![迎/背风坡下NDVI时间序列变化](Assets/Result/NDVI_direction_time_series.png)
+
+
+# 2026/3/29 情况说明
+
+1. 目前正在处理不同海拔梯度下迎风坡和背风坡的NDVI统计值, 并绘制出图;
