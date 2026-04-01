@@ -2,7 +2,7 @@
 # @Time    : 2026/3/11 下午3:46
 # @Email   : chaoqiezi.one@qq.com
 # @Wechat  : GIS茄子
-# @FileName: era5_download.py
+# @FileName: era5_uv_download.py
 
 """
 This script is used to 批量下载ERA5的风向风俗数据集
