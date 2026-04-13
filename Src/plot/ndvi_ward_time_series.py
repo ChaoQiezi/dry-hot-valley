@@ -2,7 +2,7 @@
 # @Time    : 2026/3/28 下午3:10
 # @Email   : chaoqiezi.one@qq.com
 # @Wechat  : GIS茄子
-# @FileName: ndvi_ward_time_series_ward.py
+# @FileName: ndvi_ward_time_series.py
 
 """
 This script is used to 绘制迎风坡与背风坡NDVI时间序列变化图

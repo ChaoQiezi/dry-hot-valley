@@ -204,3 +204,6 @@ secrets.json
 
 # GEE related cache
 .gee_cache/
+
+.trae/
+.claude/

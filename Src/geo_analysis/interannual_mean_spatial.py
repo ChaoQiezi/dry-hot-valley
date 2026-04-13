@@ -2,7 +2,7 @@
 # @Time    : 2026/3/25 上午11:00
 # @Email   : chaoqiezi.one@qq.com
 # @Wechat  : GIS茄子
-# @FileName: interannual_mean.py
+# @FileName: interannual_mean_spatial.py
 
 """
 This script is used to 进行年际尺度的NDVI计算(空间上)

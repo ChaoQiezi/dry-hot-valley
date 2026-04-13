@@ -9,6 +9,7 @@ This script is used to 基于NDVI年际均值栅格, 分别计算迎风坡和背
 
 console output:
 
+NDVI mean: 0.7345
 WW mean: 0.7111
 LW mean: 0.7570
 """
@@ -37,11 +38,18 @@ if __name__ == '__main__':
     da_direction = rxr.open_rasterio(direction_path, masked=True, chunks=chunk_size)
 
     # 计算迎风坡和背风坡的均值
+    ndvi_mean = da_ndvi.mean().compute()
     ww_mean = da_ndvi.where(da_direction == WINDWARD_VAL).mean().compute()
     lw_mean = da_ndvi.where(da_direction == LEEWARD_VAL).mean().compute()
 
+    # 输出
+    print(f'NDVI mean: {ndvi_mean:.4f}')
     print(f'WW mean: {ww_mean:.4f}')
     print(f'LW mean: {lw_mean:.4f}')
+
+    # 释放资源
+    client.close()
+    cluster.close()
 
 """
 console output:

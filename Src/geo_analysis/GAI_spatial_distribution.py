@@ -45,12 +45,14 @@ warnings.filterwarnings('ignore')
 # ============================================================
 ndvi_mean_path = r"E:\GeoProjects\dry_hot_valley\NDVI\Interannual\NDVI_interannual_mean.tif"
 direction_path = r"E:\GeoProjects\dry_hot_valley\GeoFactor\windward_leeward\windward_leeward.tif"
+dem_path = r"E:\GeoProjects\dry_hot_valley\GeoFactor\DEM\elevation_10m_projected.tif"
 
 out_dir = r"E:\GeoProjects\dry_hot_valley\GAI"
 out_gai_path = os.path.join(out_dir, "GAI_3km.tif")
 out_pval_path = os.path.join(out_dir, "GAI_pvalue_3km.tif")
 out_ww_mean_path = os.path.join(out_dir, "NDVI_windward_3km.tif")
 out_lw_mean_path = os.path.join(out_dir, "NDVI_leeward_3km.tif")
+out_dem_path = os.path.join(out_dir, "DEM_3km.tif")
 
 # 网格参数
 GRID_SIZE_M = 3000      # 3 km
@@ -86,6 +88,8 @@ if __name__ == '__main__':
         print(f"NDVI raster: {total_rows} × {total_cols}")
         print(f"CRS: {ndvi_crs}")
         print(f"Transform: {ndvi_transform}")
+    with rio.open(dem_path, 'r') as src:
+        dem_nodata = src.nodata
 
     # 计算网格维度
     n_grid_rows = total_rows // GRID_PIXELS
@@ -111,6 +115,7 @@ if __name__ == '__main__':
     pval = np.full((n_grid_rows, n_grid_cols), np.nan, dtype=np.float32)
     ww_mean_arr = np.full((n_grid_rows, n_grid_cols), np.nan, dtype=np.float32)
     lw_mean_arr = np.full((n_grid_rows, n_grid_cols), np.nan, dtype=np.float32)
+    dem_arr = np.full((n_grid_rows, n_grid_cols), np.nan, dtype=np.float32)
 
     # ============================================================
     # 3. 逐网格计算
@@ -118,6 +123,7 @@ if __name__ == '__main__':
     print("\nProcessing grids...")
     src_ndvi = rio.open(ndvi_mean_path, 'r')
     src_dir = rio.open(direction_path, 'r')
+    src_dem = rio.open(dem_path, 'r')
 
     valid_count = 0
     masked_count = 0
@@ -135,11 +141,15 @@ if __name__ == '__main__':
             # 读取
             ndvi_block = src_ndvi.read(1, window=window).astype(np.float64)
             dir_block = src_dir.read(1, window=window)
+            dem_block = src_dem.read(1, window=window)
 
             # 有效NDVI掩膜
-            valid_mask = np.isfinite(ndvi_block) & (ndvi_block > NDVI_MIN)
+            valid_mask = np.isfinite(ndvi_block) & np.isfinite(dem_block) & (ndvi_block > NDVI_MIN)
             if ndvi_nodata is not None:
-                valid_mask &= (ndvi_block != ndvi_nodata)
+                # valid_mask &= (ndvi_block != ndvi_nodata)
+                valid_mask &= (~np.isclose(ndvi_block, ndvi_nodata))
+            if dem_nodata is not None:
+                valid_mask &= (~np.isclose(dem_block, dem_nodata))
 
             # 分方向提取
             ww_mask = valid_mask & (dir_block == WINDWARD_VAL)
@@ -163,9 +173,13 @@ if __name__ == '__main__':
                 masked_count += 1
                 continue
 
+            # 计算DEM均值
+            dem_m = np.mean(dem_block[valid_mask])
+
             # 均值存储
             ww_mean_arr[gi, gj] = ww_m
             lw_mean_arr[gi, gj] = lw_m
+            dem_arr[gi, gj] = dem_m
 
             # 双样本 t 检验 (two-tailed, 不假设等方差)
             t_stat, p_value = ttest_ind(ww_vals, lw_vals, equal_var=False)
@@ -181,6 +195,7 @@ if __name__ == '__main__':
 
     src_ndvi.close()
     src_dir.close()
+    src_dem.close()
 
     # ============================================================
     # 4. 输出GeoTIFF
@@ -205,6 +220,7 @@ if __name__ == '__main__':
         (out_pval_path, pval, 'p-value'),
         (out_ww_mean_path, ww_mean_arr, 'NDVI_windward'),
         (out_lw_mean_path, lw_mean_arr, 'NDVI_leeward'),
+        (out_dem_path, dem_arr, 'DEM'),
     ]:
         with rio.open(path, 'w', **out_profile) as dst:
             dst.write(data, 1)
