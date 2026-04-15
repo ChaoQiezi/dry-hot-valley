@@ -7,8 +7,6 @@
 """
 This script is used to 绘制GAI(绿度不对称指数)空间分布图
 
-2026/4/14-ps: 适配干热河谷内外侧维度 (VALLEY_MODE)
-
 布局:
   ┌──────────┬──────────┐
   │  (a) GAI │ (b) sig  │
@@ -17,12 +15,6 @@ This script is used to 绘制GAI(绿度不对称指数)空间分布图
   └─────────────────────┘
 
   (a) colorbar 置于左侧(垂直), 避免挤压地图高度
-
-河谷模式 (VALLEY_MODE):
-  - "inner": 仅河谷内侧像元参与GAI计算
-  - "outer": 仅河谷外侧像元参与GAI计算
-  - "all":   河谷内外侧所有像元
-  输入/输出路径根据模式自动追加后缀
 
 输入:
   - GAI GeoTIFF (3km分辨率, UTM 47N)
@@ -49,37 +41,20 @@ warnings.filterwarnings('ignore')
 # ============================================================
 # 0. Configuration
 # ============================================================
-# 河谷模式: "inner" | "outer" | "all"
-VALLEY_MODE = "inner"
+# gai_path = r"E:\GeoProjects\dry_hot_valley\GAI\by_dem\GAI_3km_below_4050m.tif"
+# pval_path = r"E:\GeoProjects\dry_hot_valley\GAI\by_dem\GAI_pvalue_3km_below_4050m.tif"
+# out_path = r"E:\GeoProjects\dry_hot_valley\Result\Chart\GAI_spatial_below_4050m.png"
+gai_path = r"E:\GeoProjects\dry_hot_valley\GAI\by_dem\GAI_3km_over_4150m.tif"
+pval_path = r"E:\GeoProjects\dry_hot_valley\GAI\by_dem\GAI_pvalue_3km_over_4150m.tif"
+out_path = r"E:\GeoProjects\dry_hot_valley\Result\Chart\GAI_spatial_over_4150m.png"
 
-# 输入/输出路径根据模式自动生成
-gai_dir = r"E:\GeoProjects\dry_hot_valley\GAI"
-out_dir = r"E:\GeoProjects\dry_hot_valley\Result\Chart"
-
-_suffix = f"_valley_{VALLEY_MODE}"
-gai_path = os.path.join(gai_dir, f"GAI_3km{_suffix}.tif")
-pval_path = os.path.join(gai_dir, f"GAI_pvalue_3km{_suffix}.tif")
-out_path = os.path.join(out_dir, f"GAI_spatial{_suffix}.png")
-
-# 研究区范围 (地理坐标, 川西干热河谷区域)
-# 注: 当valley_mode限定后有效网格变少, 地图范围仍保持一致以便跨模式对比
+# 研究区范围 (地理坐标)
 lon_min, lon_max = 97.0, 105.0
 lat_min, lat_max = 25.6, 34.6
-
-# 模式中文标签 (用于图中标注)
-VALLEY_MODE_LABEL = {
-    'inner': 'Valley interior',
-    'outer': 'Valley exterior',
-    'all':   'All valley pixels',
-}
 
 # ============================================================
 # 1. Read data + reproject to WGS84
 # ============================================================
-print(f"Valley mode: {VALLEY_MODE}")
-print(f"GAI input:   {gai_path}")
-print(f"pval input:  {pval_path}")
-
 print("Reading GAI...")
 gai_da = rxr.open_rasterio(gai_path, masked=True).squeeze().drop_vars('band')
 print(f"  CRS: {gai_da.rio.crs}, shape: {gai_da.shape}")
@@ -98,20 +73,12 @@ lats = gai_geo.y.values
 # 统计
 gai_flat = gai_vals[np.isfinite(gai_vals)]
 pval_flat = pval_vals[np.isfinite(pval_vals)]
-
-if len(gai_flat) == 0:
-    raise ValueError(
-        f"No valid GAI cells found for valley_mode='{VALLEY_MODE}'. "
-        f"Check the analysis output at {gai_path}."
-    )
-
 pct_gt1 = (gai_flat > 1).mean() * 100
 pct_lt1 = (gai_flat < 1).mean() * 100
 pct_sig001 = (pval_flat < 0.01).mean() * 100
 pct_sig005 = ((pval_flat >= 0.01) & (pval_flat < 0.05)).mean() * 100
 pct_ns = (pval_flat >= 0.05).mean() * 100
 
-print(f"  Valid cells: {len(gai_flat)}")
 print(f"  GAI > 1 (windward greener): {pct_gt1:.1f}%")
 print(f"  GAI < 1 (leeward greener):  {pct_lt1:.1f}%")
 print(f"  p < 0.01: {pct_sig001:.1f}%,  0.01 < p < 0.05: {pct_sig005:.1f}%,  p > 0.05: {pct_ns:.1f}%")
@@ -196,14 +163,10 @@ im_gai = ax_gai.pcolormesh(
 
 add_map_features(ax_gai, show_ylabels=False)
 
-# 面积比例标注 (含模式标签)
-mode_label = VALLEY_MODE_LABEL[VALLEY_MODE]
+# 面积比例标注
 ax_gai.text(
     0.03, 0.04,
-    f'{mode_label}\n'
-    f'GAI > 1: {pct_gt1:.1f}%\n'
-    f'GAI < 1: {pct_lt1:.1f}%\n'
-    f'n = {len(gai_flat)}',
+    f'GAI > 1: {pct_gt1:.1f}%\nGAI < 1: {pct_lt1:.1f}%',
     transform=ax_gai.transAxes,
     fontsize=9, va='bottom', ha='left',
     bbox=dict(facecolor='white', edgecolor='#BBBBBB',

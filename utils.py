@@ -162,3 +162,4 @@ def img_reclass(in_path, out_path, reclass_rule):
     with rio.open(out_path, 'w', **img_profile)as dst:
         dst.write(img_out, 1)
 
+

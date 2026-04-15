@@ -1,6 +1,6 @@
 # 方向矫正：山体两侧（河谷侧 vs 外侧）坡面对比方法论调研报告
 
-**调研背景**：赵导师指出，对比对象不是"河谷左岸 vs 右岸"，而是**同一山体的两侧坡面**——对于河谷左岸的某像元，应与该像元所在山脉**另一侧**对应的像元进行对比；右岸亦然。即"河谷侧坡面 (valley-facing slope) vs 外侧坡面 (outward-facing slope)"的配对比较。  
+**调研背景**：赵导师指出，对比对象不是"河谷左岸 vs 右岸"，而是**同一山体的两侧坡面**——对于河谷左岸的某像元，应与该像元所在山脉**另一侧**对应的像元进行对比；右岸亦然。即"河谷侧坡面 (valley-facing slope) vs 外侧坡面 (outward-facing slope)"的配对比较。
 **调研日期**：2026年4月  
 **关键词覆盖**：hillslope asymmetry, opposing slope comparison, drainage divide extraction, ridge-line segmentation, slope unit, aspect-driven vegetation asymmetry, paired transect, valley-facing vs outward-facing
 
