@@ -50,11 +50,14 @@ warnings.filterwarnings('ignore')
 # 0. Configuration
 # ============================================================
 # 河谷模式: "inner" | "outer" | "all"
-VALLEY_MODE = "inner"
+# VALLEY_MODE = "inner"
+# VALLEY_MODE = "outer"
+VALLEY_MODE = "all"
 
 # 输入/输出路径根据模式自动生成
 gai_dir = r"E:\GeoProjects\dry_hot_valley\GAI"
-out_dir = r"E:\GeoProjects\dry_hot_valley\Result\Chart"
+out_dir = r"E:\GeoProjects\dry_hot_valley\Result\Chart\GAI_spatial_distribution"
+os.makedirs(out_dir, exist_ok=True)
 
 _suffix = f"_valley_{VALLEY_MODE}"
 gai_path = os.path.join(gai_dir, f"GAI_3km{_suffix}.tif")

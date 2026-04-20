@@ -43,7 +43,9 @@ valley_path = r"E:\GeoProjects\dry_hot_valley\valley_area\valley_chuanxi\valley_
 out_dir = r'E:\GeoProjects\dry_hot_valley\Output\Table'
 
 # 分析模式: "wind_only" | "valley_only" | "combined"
-ANALYSIS_MODE = "combined"
+# ANALYSIS_MODE = "combined"
+# ANALYSIS_MODE = "valley_only"
+ANALYSIS_MODE = "wind_only"
 
 start_year = 2019
 end_year = 2025

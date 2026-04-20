@@ -37,10 +37,13 @@ from qiezi.stats import mk_trend_slope
 # 0. Configuration
 # ============================================================
 # 分析模式: "wind_only" | "valley_only" | "combined"
-ANALYSIS_MODE = "combined"
+# ANALYSIS_MODE = "combined"
+# ANALYSIS_MODE = "valley_only"
+ANALYSIS_MODE = "wind_only"
 
 in_dir = r'E:\GeoProjects\dry_hot_valley\Output\Table'
-out_dir = r'E:\GeoProjects\dry_hot_valley\Result\Chart'
+out_dir = r'E:\GeoProjects\dry_hot_valley\Result\Chart\ndvi_yearly_mean_by_aspect_valley'
+os.makedirs(out_dir, exist_ok=True)
 
 # 输入/输出路径根据模式自动生成
 _suffix_map = {

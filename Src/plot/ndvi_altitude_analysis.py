@@ -51,9 +51,12 @@ warnings.filterwarnings('ignore')
 # ============================================================
 # 分析模式: "wind_only" | "valley_only" | "combined"
 ANALYSIS_MODE = "combined"
+# ANALYSIS_MODE = "valley_only"
+# ANALYSIS_MODE = "wind_only"
 
 in_dir = r'E:\GeoProjects\dry_hot_valley\Output\Table'
-out_dir = r'E:\GeoProjects\dry_hot_valley\Result\Chart'
+out_dir = r'E:\GeoProjects\dry_hot_valley\Result\Chart\ndvi_altitude_analysis'
+os.makedirs(out_dir, exist_ok=True)
 
 # 输入/输出路径根据模式自动生成
 _suffix_map = {
@@ -254,7 +257,7 @@ for i, comp in enumerate(components):
     vmask = comp_valid[key]
     ax_main.plot(
         elev[vmask], comp_data[key]['mean'][vmask],
-        color=comp['color'], linewidth=1.8, linestyle=comp['ls'],
+        color=comp['color'], linewidth=1.8, linestyle=comp['ls'], alpha=0.6,
         zorder=4,
     )
 
@@ -316,7 +319,7 @@ legend_fontsize = 9.5 if len(components) <= 2 else 8.5
 
 ax_main.legend(
     handles=legend_handles,
-    loc='upper right',
+    loc='lower right',
     fontsize=legend_fontsize,
     framealpha=0.88,
     edgecolor='#CCCCCC',
@@ -399,7 +402,7 @@ elif n_delta == 2:
         )
 
     ax_delta.legend(
-        loc='upper right', fontsize=8,
+        loc='lower left', fontsize=8,
         framealpha=0.88, edgecolor='#CCCCCC',
         handlelength=1.5,
         ncol=1,
@@ -482,37 +485,49 @@ if len(count_up_keys) == 1 and len(count_down_keys) == 1:
 
 else:
     # ---- 4分量: 分组背靠背 ----
-    # 上方: count_up中的各分量 (inner在前/左, outer在后/右)
-    # 下方: count_down中的各分量 (同上)
+    # 视觉编码: 位置(上/下) = windward/leeward, 颜色 = inner/outer
+    # 使用独立于panel(a)迎/背风坡色系的inner/outer专用色,
+    # 确保上下两组柱状图颜色一致, 图例不产生歧义
+    C_COUNT_INNER = '#4A7C6F'   # 深青灰 — 河谷内侧
+    C_COUNT_OUTER = '#A8CBB7'   # 浅鼠尾草 — 河谷外侧
+
+    # 为每个key分配颜色: 按key名中是否含inner/outer
+    count_color_map = {}
+    for key in count_up_keys + count_down_keys:
+        if 'inner' in key:
+            count_color_map[key] = C_COUNT_INNER
+        elif 'outer' in key:
+            count_color_map[key] = C_COUNT_OUTER
+        else:
+            count_color_map[key] = '#888888'  # fallback
+
     n_up = len(count_up_keys)
     n_dn = len(count_down_keys)
     sub_bar_w = bar_w_count / max(n_up, n_dn)  # 每个子柱的宽度
 
-    # 上方分量
+    # 上方分量 (windward)
     for i, key in enumerate(count_up_keys):
-        color = next(c['color'] for c in components if c['key'] == key)
         vmask = comp_valid[key]
         norm_v = comp_data[key]['count'] / max_count
         x_off = (i - (n_up - 1) / 2.0) * sub_bar_w
         ax_count.bar(
             elev[vmask] + x_off, norm_v[vmask],
-            width=sub_bar_w * 0.9, color=color, alpha=0.5,
+            width=sub_bar_w * 0.9, color=count_color_map[key], alpha=0.55,
             edgecolor='none', zorder=2,
         )
 
-    # 下方分量
+    # 下方分量 (leeward)
     for i, key in enumerate(count_down_keys):
-        color = next(c['color'] for c in components if c['key'] == key)
         vmask = comp_valid[key]
         norm_v = comp_data[key]['count'] / max_count
         x_off = (i - (n_dn - 1) / 2.0) * sub_bar_w
         ax_count.bar(
             elev[vmask] + x_off, -norm_v[vmask],
-            width=sub_bar_w * 0.9, color=color, alpha=0.5,
+            width=sub_bar_w * 0.9, color=count_color_map[key], alpha=0.55,
             edgecolor='none', zorder=2,
         )
 
-    # 标注: 上方和下方
+    # 标注: 上方=Windward, 下方=Leeward
     ax_count.text(
         0.99, 0.88, config['count_up_label'], transform=ax_count.transAxes,
         fontsize=8, color='#333333', ha='right', va='top', fontweight='bold',
@@ -522,28 +537,16 @@ else:
         fontsize=8, color='#333333', ha='right', va='bottom', fontweight='bold',
     )
 
-    # 小图例区分inner/outer
-    legend_patches = []
-    seen_labels = set()
-    for key in count_up_keys + count_down_keys:
-        comp_cfg = next(c for c in components if c['key'] == key)
-        # 提取valley侧标签 (inner/outer)
-        if 'inner' in key:
-            valley_label = 'Inner'
-        elif 'outer' in key:
-            valley_label = 'Outer'
-        else:
-            valley_label = comp_cfg['label']
-        if valley_label not in seen_labels:
-            seen_labels.add(valley_label)
-            legend_patches.append(
-                Patch(facecolor=comp_cfg['color'], alpha=0.5, label=valley_label)
-            )
+    # 图例: inner/outer专用色 (上下一致)
+    legend_patches = [
+        Patch(facecolor=C_COUNT_INNER, alpha=0.55, label='Inner'),
+        Patch(facecolor=C_COUNT_OUTER, alpha=0.55, label='Outer'),
+    ]
     ax_count.legend(
-        handles=legend_patches, loc='upper left',
+        handles=legend_patches, loc='lower left',
         fontsize=7, framealpha=0.8, edgecolor='#CCCCCC',
         handlelength=1.0, handleheight=0.8,
-        ncol=len(legend_patches),
+        ncol=2,
     )
 
 ax_count.axhline(y=0, color='k', linewidth=0.4, zorder=1)

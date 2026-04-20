@@ -188,11 +188,6 @@ logs/
 *.cache
 
 # Project specific
-data/
-output/
-results/
-temp/
-tmp/
 
 # Credentials and secrets
 *.pem

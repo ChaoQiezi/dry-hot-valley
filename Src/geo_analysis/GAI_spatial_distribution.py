@@ -63,8 +63,8 @@ out_dir = r"E:\GeoProjects\dry_hot_valley\GAI"
 
 # 河谷内外侧模式: "inner" | "outer" | "all"
 # VALLEY_MODE = "inner"
-VALLEY_MODE = "outer"
-# VALLEY_MODE = "inner"
+# VALLEY_MODE = "outer"
+VALLEY_MODE = "all"
 
 # 网格参数
 GRID_SIZE_M = 3000      # 3 km
