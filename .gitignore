@@ -203,3 +203,4 @@ secrets.json
 .trae/
 .claude/
 /Assets/Ref/claude/dead.MD
+/.arts/settings.json

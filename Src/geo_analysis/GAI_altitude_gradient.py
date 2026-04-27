@@ -32,9 +32,9 @@ import rasterio as rio
 # ============================================================
 gai_path = r"E:\GeoProjects\dry_hot_valley\GAI\GAI_3km.tif"
 dem_path = r"E:\GeoProjects\dry_hot_valley\GAI\DEM_3km.tif"
-out_path = r"E:\GeoProjects\dry_hot_valley\Output\Table\GAI_elevation_gradient.xlsx"
+out_path = r"E:\GeoProjects\dry_hot_valley\Result\Table\altitude\GAI_altitude_gradient.xlsx"
 
-elev_step = 100  # 高程梯度间隔(m)
+elev_step = 50  # 高程梯度间隔(m)
 
 # ============================================================
 # 1. Read data
