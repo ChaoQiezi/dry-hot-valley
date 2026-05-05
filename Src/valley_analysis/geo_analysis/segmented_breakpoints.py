@@ -222,6 +222,22 @@ def fit_segmented(x, y, max_bp=MAX_BREAKPOINTS):
     }
 
 
+def predict_segmented(fit, x_pred):
+    """Return fitted y values from piecewise_regression.Fit."""
+    final_fit = fit.best_muggeo.best_fit
+    params = final_fit.raw_params
+    breakpoints = final_fit.next_breakpoints
+
+    intercept = params[0]
+    alpha = params[1]
+    beta_hats = params[2:2 + len(breakpoints)]
+
+    y_pred = intercept + alpha * x_pred
+    for beta, bp in zip(beta_hats, breakpoints):
+        y_pred += beta * np.maximum(x_pred - bp, 0)
+    return y_pred
+
+
 seg_results = {}
 print('\n' + '=' * 60)
 print('对四条河分别拟合 segmented 模型')
@@ -284,7 +300,7 @@ for ax_idx, name in enumerate(valley_order):
     # 拟合曲线
     try:
         x_pred = np.linspace(x.min(), x.max(), 300)
-        y_pred = r['fit_obj'].predict(x_pred)
+        y_pred = predict_segmented(r['fit_obj'], x_pred)
         ax.plot(x_pred, y_pred, color=COLORS[name], linewidth=2.4, zorder=4)
     except Exception as e:
         print(f'  {name} 预测失败: {e}')

@@ -31,7 +31,7 @@ OUT_DIR = r'E:\GeoProjects\dry_hot_valley\Result\Chart\altitude'
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # 关键阈值参数
-MIN_COUNT_PER_BIN = 10        # 每个海拔 bin 至少要有的网格数(剔除低样本噪声)
+MIN_COUNT_PER_BIN = 30        # 每个海拔 bin 至少要有的网格数(剔除低样本噪声)
 HIGH_CONF_LOW = 1500          # 高置信海拔区间下界
 HIGH_CONF_HIGH = 4500         # 高置信海拔区间上界(再高积雪不对称污染信号)
 

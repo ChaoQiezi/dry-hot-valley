@@ -93,28 +93,50 @@ for _, row in df_lowess.iterrows():
         'ci_high': row['CI_high_m'],
     })
 for _, row in df_seg.iterrows():
-    # 用第一个断点(最接近反转海拔的)
-    bp1 = row['断点1_m']
-    if not np.isnan(bp1):
+    lowess_match = df_lowess[df_lowess['河谷'] == row['河谷']]
+    if lowess_match.empty:
+        continue
+    lowess_reversal = lowess_match['反转海拔_m'].iloc[0]
+
+    candidates = []
+    for i in range(1, 3):
+        bp = row.get(f'断点{i}_m', np.nan)
+        if np.isnan(bp):
+            continue
+        candidates.append({
+            'bp': bp,
+            'ci_low': row[f'断点{i}_CI下界_m'],
+            'ci_high': row[f'断点{i}_CI上界_m'],
+            'distance': abs(bp - lowess_reversal),
+            'index': i,
+        })
+
+    if candidates:
+        # 多断点时只取最接近 LOWESS 反转点的断点,避免把低海拔 slope break 当成反转阈值。
+        nearest = min(candidates, key=lambda item: item['distance'])
         methods_data.append({
             'valley': row['河谷'],
-            'method': 'Segmented 断点1',
-            'estimate': bp1,
-            'ci_low': bp1 - 100,  # 简化处理,真实 CI 可从 fit 对象取
-            'ci_high': bp1 + 100,
+            'method': 'Segmented 最近断点',
+            'estimate': nearest['bp'],
+            'ci_low': nearest['ci_low'],
+            'ci_high': nearest['ci_high'],
+            'segmented_bp_index': nearest['index'],
+            'distance_to_lowess_m': nearest['distance'],
         })
 
 forest_df = pd.DataFrame(methods_data)
+forest_df.to_csv(os.path.join(OUT_DIR, 'methods_forest_data.csv'),
+                 index=False, encoding='utf-8-sig', float_format='%.1f')
 
 # ============================================================
 # 绘图
 # ============================================================
 fig, ax = plt.subplots(figsize=(11, 7))
 
-valley_order = ['岷江', '大渡河', '雅砻江', '金沙江']
-methods = ['LOWESS 反转点', 'Segmented 断点1']
-method_markers = {'LOWESS 反转点': 'o', 'Segmented 断点1': 's'}
-method_offset = {'LOWESS 反转点': -0.15, 'Segmented 断点1': 0.15}
+valley_order = ['岷江', '大渡河', '金沙江', '雅砻江']
+methods = ['LOWESS 反转点', 'Segmented 最近断点']
+method_markers = {'LOWESS 反转点': 'o', 'Segmented 最近断点': 's'}
+method_offset = {'LOWESS 反转点': -0.15, 'Segmented 最近断点': 0.15}
 
 y_labels = []
 y_pos_count = 0
@@ -167,14 +189,14 @@ legend_elems = [
            linestyle='', label='LOWESS 反转点 (95% CI)'),
     Line2D([0], [0], marker='s', color='gray', markersize=10,
            markerfacecolor='gray', markeredgecolor='white',
-           linestyle='', label='Segmented 断点1 (±100m)'),
+           linestyle='', label='Segmented 最近断点 (95% CI)'),
     Line2D([0], [0], color='black', linewidth=1.2, linestyle='--',
            label=f'整体均值 = {overall_mean:.0f} m'),
 ]
-ax.legend(handles=legend_elems, loc='lower right', fontsize=10, framealpha=0.9)
+ax.legend(handles=legend_elems, loc='upper right', fontsize=10, framealpha=0.9)
 
 ax.set_title('川西四河 VAI 阈值的多方法 × 多河谷收敛性\n'
-             f'(所有估计极差 {overall_range:.0f} m,跨方法跨河谷高度一致)',
+             f'(LOWESS 反转点与相邻 segmented 断点集中在 {np.min(all_estimates):.0f}–{np.max(all_estimates):.0f} m)',
              fontsize=13, pad=10)
 
 fig.savefig(OUT_PATH, dpi=600, bbox_inches='tight', pad_inches=0.1)

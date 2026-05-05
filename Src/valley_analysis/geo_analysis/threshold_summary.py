@@ -78,8 +78,34 @@ df_lowess = pd.read_csv(os.path.join(OUT_DIR, 'reversal_bootstrap_results.csv'))
 df_seg = pd.read_csv(os.path.join(OUT_DIR, 'segmented_breakpoints.csv'))
 df_intensity = pd.read_csv(os.path.join(OUT_DIR, 'intensity_metrics.csv'))
 
-# 合并主表
-summary = df_lowess.merge(df_seg, on='河谷').merge(df_intensity, on='河谷')
+# 合并主表。LOWESS 反转点是四河主阈值；segmented 对岷江可能最优为 0 断点,不能因此丢掉岷江。
+summary = (
+    df_lowess
+    .merge(df_seg, on='河谷', how='left')
+    .merge(df_intensity, on='河谷', how='left')
+)
+
+# 多 segmented 断点时,选择最接近 LOWESS 反转点的断点作为 Fig 5/汇总表的交叉验证断点。
+for idx, row in summary.iterrows():
+    candidates = []
+    for i in range(1, 3):
+        bp = row.get(f'断点{i}_m', np.nan)
+        if pd.isna(bp):
+            continue
+        candidates.append({
+            'bp': bp,
+            'ci_low': row[f'断点{i}_CI下界_m'],
+            'ci_high': row[f'断点{i}_CI上界_m'],
+            'distance': abs(bp - row['反转海拔_m']),
+            'index': i,
+        })
+    if candidates:
+        nearest = min(candidates, key=lambda item: item['distance'])
+        summary.loc[idx, '邻近分段断点_m'] = nearest['bp']
+        summary.loc[idx, '邻近分段断点_CI下界_m'] = nearest['ci_low']
+        summary.loc[idx, '邻近分段断点_CI上界_m'] = nearest['ci_high']
+        summary.loc[idx, '邻近分段断点序号'] = nearest['index']
+        summary.loc[idx, '分段断点距LOWESS_m'] = nearest['distance']
 
 # 添加高度差列(相对于谷底海拔——这里用各河的最低有效海拔近似)
 data = load_valley_data()
@@ -94,12 +120,14 @@ for valley in summary['河谷']:
     )
 
 # 关键列重排
-key_cols = ['河谷', '反转海拔_m', 'CI_low_m', 'CI_high_m', '断点1_m', '断点2_m',
+key_cols = ['河谷', '反转海拔_m', 'CI_low_m', 'CI_high_m',
+            '断点1_m', '断点2_m', '邻近分段断点_m', '分段断点距LOWESS_m',
             'abs_vai_median', 'amplitude', 'elev_min_vai', '谷底海拔_m',
             '反转高差_m', '极值高差_m']
 summary_out = summary[key_cols].copy()
 summary_out.columns = ['河谷', '反转海拔(m)', 'CI下界(m)', 'CI上界(m)',
-                       '分段断点1(m)', '分段断点2(m)',
+                       '分段断点1(m)', '分段断点2(m)', '邻近分段断点(m)',
+                       '分段断点距LOWESS(m)',
                        '|VAI|中位数(%)', 'VAI振幅(%)', '极值海拔(m)',
                        '谷底海拔(m)', '反转相对高差(m)', '极值相对高差(m)']
 summary_out.to_csv(OUT_PATH, index=False, encoding='utf-8-sig', float_format='%.1f')
