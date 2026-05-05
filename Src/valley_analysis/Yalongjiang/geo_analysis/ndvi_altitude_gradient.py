@@ -183,7 +183,7 @@ if __name__ == '__main__':
     print(f'Dask dashboard: {client.dashboard_link}')
 
     # 检索
-    wildcard = r"E:\GeoProjects\dry_hot_valley\Yalongjiang\NDVI\Yearly\NDVI_*.tif"
+    wildcard = r"E:\GeoProjects\dry_hot_valley\Yalongjiang\NDVI\Yearly\NDVI_*_region.tif"
     ndvi_paths = glob(wildcard)
 
     # 迭代处理 (逐年)

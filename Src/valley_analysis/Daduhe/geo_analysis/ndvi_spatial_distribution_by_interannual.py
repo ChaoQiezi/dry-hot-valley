@@ -55,6 +55,7 @@ if __name__ == '__main__':
     mean_img = cube.mean(dim='time')
 
     # 输出
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
     mean_img.rio.write_nodata(out_profile['nodata'], encoded=True, inplace=True)  # 写入无效值, 进行均值处理后无效值为None
     with ProgressBar():
         mean_img.rio.to_raster(

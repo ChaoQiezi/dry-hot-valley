@@ -36,6 +36,7 @@ ndvi_dir = r"E:\GeoProjects\dry_hot_valley\Daduhe\NDVI\Yearly"
 dem_path = r"E:\GeoProjects\dry_hot_valley\Daduhe\geo_factor\elevation_10m_projected_region.tif"
 aspect_path = r"E:\GeoProjects\dry_hot_valley\Daduhe\geo_factor\windward_leeward_region.tif"  # 二值栅格: 1=迎风坡, 2=背风坡
 # out_path = r'E:\GeoProjects\dry_hot_valley\Daduhe\Result\Table\altitude\NDVI_elevation_gradient.xlsx'
+interannual_ndvi_path = r"E:\GeoProjects\dry_hot_valley\Daduhe\NDVI\Interannual\NDVI_interannual_mean.tif"
 out_dir = r'E:\GeoProjects\dry_hot_valley\Daduhe\Result\Table\altitude'
 
 chunk_size = {'x': 4096, 'y': 4096}
@@ -165,9 +166,6 @@ def main(out_path, ndvi_path, dem_path, aspect_path):
         # 保存当前进度
         if len(records) > 0:
             save_checkpoint(pd.DataFrame(records), out_path)
-        # ------ 关闭Dask集群 ------
-        client.close()
-        cluster.close()
 
     # ------ 输出Excel ------
     df = pd.DataFrame(records).sort_values('elev_center').reset_index(drop=True)
@@ -185,10 +183,10 @@ if __name__ == '__main__':
     print(f'Dask dashboard: {client.dashboard_link}')
 
     # 检索
-    wildcard = r"E:\GeoProjects\dry_hot_valley\Daduhe\NDVI\Yearly\NDVI_*.tif"
+    wildcard = r"E:\GeoProjects\dry_hot_valley\Daduhe\NDVI\Yearly\NDVI_*_region.tif"
     ndvi_paths = glob(wildcard)
 
-    # 迭代处理
+    # 迭代处理 (逐年)
     for ndvi_path in ndvi_paths:
         out_path = os.path.join(out_dir, os.path.basename(ndvi_path).replace('.tif', '_elevation_gradient.xlsx'))
 
@@ -198,4 +196,17 @@ if __name__ == '__main__':
 
         main(out_path, ndvi_path, dem_path, aspect_path)
         print(f'Finished: {ndvi_path}')
+
+    # 年际均值处理
+    interannual_out_path = os.path.join(out_dir, 'NDVI_interannual_mean_elevation_gradient.xlsx')
+    if os.path.exists(interannual_out_path):
+        print(f'[Skip] Output already exists: {os.path.basename(interannual_out_path)}')
+    else:
+        main(interannual_out_path, interannual_ndvi_path, dem_path, aspect_path)
+        print(f'Finished: {os.path.basename(interannual_ndvi_path)}')
+
+    # ------ 关闭Dask集群 ------
+    client.close()
+    cluster.close()
+    print('All done.')
 

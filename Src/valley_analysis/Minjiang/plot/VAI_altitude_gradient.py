@@ -178,7 +178,7 @@ ax_main.scatter(
 #         )
 
 # 坐标轴
-ax_main.set_ylabel('VAI (%)', fontsize=12)
+ax_main.set_ylabel('岷江河谷VAI (%)', fontsize=12)
 ax_main.set_ylim(y_lo, y_hi)
 ax_main.set_xlim(elev.min(), elev.max())
 ax_main.tick_params(labelbottom=False)
