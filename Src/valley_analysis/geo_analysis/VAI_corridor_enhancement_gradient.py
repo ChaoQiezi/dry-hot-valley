@@ -15,11 +15,11 @@ This script asks a narrower question:
 
     Delta VAI(z) = VAI_near_river(z) - VAI_far_river(z)
 
-where near and far cells are compared within the same elevation bin. The main
-scenario uses:
+where near and far cells are compared within the same elevation bin:
 
-    near river: 0-10 km
-    far river : 20-30 km
+    近河道 (near river): 0-10 km
+    远河道 (far river) : 20-30 km
+    (10-20 km buffer zone excluded to sharpen the near-far contrast)
 
 If Delta VAI decreases to 0, that height is a better candidate for the
 "foehn enhancement cessation" threshold than VAI=0 itself.
@@ -61,25 +61,14 @@ LOWESS_FRAC = 0.35
 BOOTSTRAP_N = 500
 RANDOM_SEED = 20260506
 
-MAIN_SCENARIO = "near_0_10_vs_far_20_30"
-SCENARIOS = [
-    {
-        "scenario": "near_0_10_vs_far_20_30",
-        "label": "近河道0-10 km - 远河道20-30 km",
-        "near_min_m": 0,
-        "near_max_m": 10_000,
-        "far_min_m": 20_000,
-        "far_max_m": 30_000,
-    },
-    {
-        "scenario": "near_0_20_vs_far_20_30",
-        "label": "近河道0-20 km - 远河道20-30 km",
-        "near_min_m": 0,
-        "near_max_m": 20_000,
-        "far_min_m": 20_000,
-        "far_max_m": 30_000,
-    },
-]
+SCENARIO = {
+    "scenario": "near_0_10_vs_far_20_30",
+    "label": "近河道0-10 km - 远河道20-30 km",
+    "near_min_m": 0,
+    "near_max_m": 10_000,
+    "far_min_m": 20_000,
+    "far_max_m": 30_000,
+}
 
 VALLEY_LABELS = {
     "Daduhe": "大渡河",
@@ -402,8 +391,8 @@ def summarize_segment_strength(df):
 # 2. Plot
 # ============================================================
 def plot_results(bin_df, summary_df):
-    main = bin_df[bin_df["scenario"] == MAIN_SCENARIO].copy()
-    main_summary = summary_df[summary_df["scenario"] == MAIN_SCENARIO].copy()
+    main = bin_df[bin_df["scenario"] == SCENARIO["scenario"]].copy()
+    main_summary = summary_df[summary_df["scenario"] == SCENARIO["scenario"]].copy()
 
     fig, axes = plt.subplots(2, 2, figsize=(13, 8.4))
     ax_abs, ax_rel, ax_cmp, ax_thr = axes.ravel()
@@ -545,26 +534,25 @@ if __name__ == "__main__":
     print(f"Input cells after filters: {len(cells)}")
 
     tables = []
-    for scenario in SCENARIOS:
-        print(f"\nScenario: {scenario['label']}")
-        for valley in ["Daduhe", "Minjiang", "Jinshajiang", "Yalongjiang", "Combined"]:
-            valley_df = cells[cells["valley"] == valley]
-            near_n = len(subset_by_distance(
-                valley_df, scenario["near_min_m"], scenario["near_max_m"]
-            ))
-            far_n = len(subset_by_distance(
-                valley_df, scenario["far_min_m"], scenario["far_max_m"]
-            ))
-            print(f"  {VALLEY_LABELS[valley]}: near={near_n}, far={far_n}")
+    print(f"\nScenario: {SCENARIO['label']}")
+    for valley in ["Daduhe", "Minjiang", "Jinshajiang", "Yalongjiang", "Combined"]:
+        valley_df = cells[cells["valley"] == valley]
+        near_n = len(subset_by_distance(
+            valley_df, SCENARIO["near_min_m"], SCENARIO["near_max_m"]
+        ))
+        far_n = len(subset_by_distance(
+            valley_df, SCENARIO["far_min_m"], SCENARIO["far_max_m"]
+        ))
+        print(f"  {VALLEY_LABELS[valley]}: near={near_n}, far={far_n}")
 
-            tables.append(bin_delta_for_axis(
-                cells, scenario, valley,
-                "absolute_elevation", "DEM_m", ELEV_BIN_M, rng,
-            ))
-            tables.append(bin_delta_for_axis(
-                cells, scenario, valley,
-                "relative_height", "relative_height_m", REL_BIN_M, rng,
-            ))
+        tables.append(bin_delta_for_axis(
+            cells, SCENARIO, valley,
+            "absolute_elevation", "DEM_m", ELEV_BIN_M, rng,
+        ))
+        tables.append(bin_delta_for_axis(
+            cells, SCENARIO, valley,
+            "relative_height", "relative_height_m", REL_BIN_M, rng,
+        ))
 
     bins = pd.concat([t for t in tables if len(t)], ignore_index=True)
     summary = summarize_threshold(bins)
@@ -576,8 +564,8 @@ if __name__ == "__main__":
     )
     plot_results(bins, summary)
 
-    print("\nMain scenario summary:")
-    show = summary[summary["scenario"] == MAIN_SCENARIO].copy()
+    print("\nScenario summary:")
+    show = summary[summary["scenario"] == SCENARIO["scenario"]].copy()
     show = show[[
         "valley_label", "axis_label", "valid_bins",
         "x_min_valid", "x_max_valid", "peak_delta_vai",
