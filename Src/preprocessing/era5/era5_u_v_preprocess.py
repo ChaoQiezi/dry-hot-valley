@@ -40,8 +40,8 @@ img_ref_path = r"G:\GeoProjects\dry_hot_valley\geo_factor\DEM\GLO-30\elevation_1
 start_year = 2017
 end_year = 2025
 out_nc_dir = os.path.dirname(in_dir)
-start_month = 6  # 6月份
-end_month = 8  # 8月份
+start_month = 5  # 5月份
+end_month = 9  # 9月份
 start_month_ix = start_month - 1
 end_month_ix = end_month - 1
 proj4_str = '+proj=longlat +datum=WGS84 +no_defs'
