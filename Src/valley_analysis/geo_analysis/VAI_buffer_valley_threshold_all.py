@@ -470,41 +470,67 @@ def plot_all_valleys(grid, abs_bin, rel_bin, combined_abs, combined_rel,
     ax_count.legend(frameon=False, loc="best", fontsize=8)
     ax_count.grid(axis="y", color="#DDDDDD", lw=0.5, alpha=0.7)
 
-    # --- (d) forest plot: ABS crossing thresholds per valley + combined
+    # --- (d) forest plot: ABS + REL crossing thresholds per valley + combined
     forest_valleys = VALLEY_ORDER + ["整体"]
     y_positions = list(range(len(forest_valleys)))
     for i, valley in enumerate(forest_valleys):
         if valley == "整体":
-            med, lo, hi, n_cross = combined_abs
+            abs_med, abs_lo, abs_hi, abs_n = combined_abs
+            rel_med, rel_lo, rel_hi, rel_n = combined_rel
             color = "#222222"
             ms = 9
-            lw = 2.0
+            lw = 2.2
         else:
-            r = per_valley_results[valley]["abs"]
-            med, lo, hi, n_cross = r["median"], r["lo95"], r["hi95"], r["n_cross"]
+            r_abs = per_valley_results[valley]["abs"]
+            r_rel = per_valley_results[valley]["rel"]
+            abs_med, abs_lo, abs_hi, abs_n = r_abs["median"], r_abs["lo95"], r_abs["hi95"], r_abs["n_cross"]
+            rel_med, rel_lo, rel_hi, rel_n = r_rel["median"], r_rel["lo95"], r_rel["hi95"], r_rel["n_cross"]
             color = COLORS[valley]
             ms = 7
-            lw = 1.2
-        if np.isfinite(med):
+            lw = 1.4
+
+        y_abs = i + 0.18
+        y_rel = i - 0.18
+
+        if np.isfinite(abs_med):
             ax_forest.errorbar(
-                med, i, xerr=[[med - lo], [hi - med]],
-                fmt="o", color=color, capsize=3, markersize=ms,
+                abs_med, y_abs, xerr=[[abs_med - abs_lo], [abs_hi - abs_med]],
+                fmt="o", color=color, capsize=2.5, markersize=ms,
                 linewidth=lw, markeredgecolor="white", markeredgewidth=0.5,
             )
-            ax_forest.text(
-                med, i + 0.28,
-                f"{med:.0f} m  ({n_cross}/{N_BOOT})",
-                fontsize=7, ha="center", va="bottom", color=color,
+            if valley == "整体":
+                ax_forest.text(
+                    abs_hi + 30, y_abs + 0.08,
+                    f"ABS {abs_med:.0f} m",
+                    fontsize=7, ha="left", va="bottom", color=color,
+                )
+        if np.isfinite(rel_med):
+            ax_forest.errorbar(
+                rel_med, y_rel, xerr=[[rel_med - rel_lo], [rel_hi - rel_med]],
+                fmt="s", color=color, capsize=2.5, markersize=ms - 1,
+                linewidth=lw, markeredgecolor="white", markeredgewidth=0.5,
             )
-        else:
-            ax_forest.text(
-                0.5, i, f"no crossing ({n_cross}/{N_BOOT})",
-                fontsize=7, ha="center", va="center", color="#999999",
-            )
+            if valley == "整体":
+                ax_forest.text(
+                    rel_hi + 30, y_rel - 0.08,
+                    f"REL {rel_med:.0f} m",
+                    fontsize=7, ha="left", va="top", color=color,
+                )
+
     ax_forest.set_yticks(y_positions)
     ax_forest.set_yticklabels(forest_valleys, fontsize=9)
-    ax_forest.axvline(x=abs_med, color="#999999", ls=":", lw=0.8, alpha=0.6)
-    ax_forest.set_xlabel("反转海拔 (m)")
+    ax_forest.set_ylim(-0.6, len(forest_valleys) - 0.4)
+
+    from matplotlib.lines import Line2D
+    legend_elements = [
+        Line2D([0], [0], marker="o", color="w", markerfacecolor="#666666",
+               markersize=7, label="绝对海拔 (ABS)"),
+        Line2D([0], [0], marker="s", color="w", markerfacecolor="#666666",
+               markersize=6, label="相对高差 (REL)"),
+    ]
+    ax_forest.legend(handles=legend_elements, loc="lower right", fontsize=7,
+                     frameon=False, borderpad=0.5, labelspacing=0.4)
+    ax_forest.set_xlabel("反转海拔 / 高差 (m)")
     ax_forest.set_title("D. 各河谷及整体 bootstrap 反转阈值 (95% CI)")
     ax_forest.grid(axis="x", color="#DDDDDD", lw=0.5, alpha=0.7)
 
