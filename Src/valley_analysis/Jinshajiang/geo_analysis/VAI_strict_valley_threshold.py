@@ -223,12 +223,30 @@ def load_strict_grid(centerline):
 
 
 def load_polygon_xy():
-    """读取 Jinshajiang_valley.shp 顶点用于绘图叠加(已是 UTM 47N, 不需变换)."""
+    """读取 polygon 顶点用于绘图叠加; 必要时把 shp 坐标变换到栅格 CRS.
+
+    部分河谷的 *_valley.shp 不是 UTM 47N (例如岷江为 Asia_North_Albers).
+    若不变换, polygon 顶点会落到完全不同的平面坐标, 导致 panel D 上 polygon
+    与 3km 网格点完全错位.
+    """
+    from pyproj import CRS, Transformer
+
+    with rio.open(VAI_PATH) as src:
+        dst_crs = CRS.from_user_input(src.crs)
+
+    prj_path = Path(VALLEY_SHP_PATH).with_suffix(".prj")
+    src_crs = CRS.from_wkt(prj_path.read_text(errors="ignore"))
+    need_transform = src_crs != dst_crs
+    if need_transform:
+        transformer = Transformer.from_crs(src_crs, dst_crs, always_xy=True)
+
     rings = []
     reader = shapefile.Reader(str(VALLEY_SHP_PATH))
     for shape in reader.shapes():
         for pts in iter_parts(shape):
             xs, ys = zip(*pts)
+            if need_transform:
+                xs, ys = transformer.transform(xs, ys)
             rings.append((np.asarray(xs), np.asarray(ys)))
     return rings
 
@@ -440,11 +458,13 @@ def plot_threshold(grid, abs_bin, rel_bin, summary, polygon_rings):
     ax_count.grid(axis="y", color="#DDDDDD", lw=0.5, alpha=0.7)
 
     # --- (d) spatial map: cells colored by VAI
-    norm = TwoSlopeNorm(
-        vcenter=0,
-        vmin=np.nanpercentile(grid["VAI"], 2),
-        vmax=np.nanpercentile(grid["VAI"], 98),
-    )
+    _vlo = np.nanpercentile(grid["VAI"], 2)
+    _vhi = np.nanpercentile(grid["VAI"], 98)
+    if _vlo >= 0:
+        _vlo = -abs(_vhi) * 0.05
+    if _vhi <= 0:
+        _vhi = abs(_vlo) * 0.05
+    norm = TwoSlopeNorm(vcenter=0, vmin=_vlo, vmax=_vhi)
     sc = ax_map.scatter(
         grid["x"] / 1000, grid["y"] / 1000,
         c=grid["VAI"], cmap="RdBu_r", norm=norm,
