@@ -66,8 +66,8 @@ CENTERLINE_SAMPLE_STEP_M = 100
 SEGMENT_LENGTH_M = 30000
 
 # 分箱
-ABS_BIN_M = 100
-REL_BIN_M = 100
+ABS_BIN_M = 50
+REL_BIN_M = 50
 MIN_BIN_COUNT = 10
 
 LOWESS_FRAC = 0.35
@@ -333,7 +333,7 @@ def plot_threshold(grid, abs_bin, rel_bin, summary, centerline_parts):
         abs_bin["bin_center"], abs_bin["vai_mean"],
         s=np.clip(abs_bin["count"] * 2, 14, 100),
         c="#444444", alpha=0.7, edgecolor="white", linewidth=0.5,
-        label="100m 分箱均值",
+        label="50m 分箱均值",
     )
     xs, ys = lowess_cells(grid, "DEM_m")
     if len(xs):
@@ -363,7 +363,7 @@ def plot_threshold(grid, abs_bin, rel_bin, summary, centerline_parts):
         rel_bin["bin_center"], rel_bin["vai_mean"],
         s=np.clip(rel_bin["count"] * 2, 14, 100),
         c="#444444", alpha=0.7, edgecolor="white", linewidth=0.5,
-        label="100m 分箱均值",
+        label="50m 分箱均值",
     )
     xs, ys = lowess_cells(rel_grid, "relative_height_m", x_min=0)
     if len(xs):
