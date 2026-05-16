@@ -2,7 +2,7 @@
 # @Time    : 2026/5/7
 # @Email   : chaoqiezi.one@qq.com
 # @Wechat  : GIS茄子
-# @FileName: VAI_buffer_valley_3km.py
+# @FileName: VAI_spatial_distribution_buffer.py
 
 """
 This script is used to 在金沙江河道4km缓冲区内重算3km网格VAI

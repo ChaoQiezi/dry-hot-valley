@@ -2,7 +2,7 @@
 # @Time    : 2026/5/8
 # @Email   : chaoqiezi.one@qq.com
 # @Wechat  : GIS茄子
-# @FileName: VAI_buffer_valley_threshold_all.py
+# @FileName: VAI_altitude_gradient_buffer.py
 
 """
 四条干热河谷 4km 河道 buffer 内 3km VAI 的整体反转海拔阈值分析
@@ -12,7 +12,7 @@
   - 分河谷 LOWESS 曲线对比
   - 森林图汇总各河谷及整体反转海拔 (panel D)
 
-输入: 各河谷 VAI_buffer_valley_3km.py 生成的 VAI_3km_buffer.tif 等
+输入: 各河谷 VAI_spatial_distribution_buffer.py 生成的 VAI_3km_buffer.tif 等
 输出:
   - Result/Table/altitude/VAI_buffer_cells_all.csv
   - Result/Table/altitude/VAI_buffer_abs_gradient_all.csv

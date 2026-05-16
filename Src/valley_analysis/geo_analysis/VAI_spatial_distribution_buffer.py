@@ -1,24 +1,14 @@
 # @Author  : ChaoQiezi
-# @Time    : 2026/5/7
+# @Time    : 2026/5/8
 # @Email   : chaoqiezi.one@qq.com
 # @Wechat  : GIS茄子
-# @FileName: VAI_buffer_valley_3km.py
+# @FileName: VAI_spatial_distribution_buffer.py
 
 """
-This script is used to 在岷江河道4km缓冲区内重算3km网格VAI
+批量计算四条干热河谷的4km河道buffer内3km网格VAI
 
-与 VAI_strict_valley_3km.py(基于人为认定的干热河谷polygon)不同:
-  - 河谷区域定义改为"河道中心线 ±4 km buffer"
-  - 优点: 不依赖主观polygon delineation, 4 km 与典型河谷半宽接近
-  - 横向覆盖 8 km, 略宽于 3 km grid 单元 (≥1 网格对全覆盖)
-
-输入:
-  - NDVI 年际均值栅格 (NDVI_interannual_mean_region.tif), UTM 47N, 10m
-  - 迎风/背风二值栅格 (windward_leeward_region.tif), 1=迎风, 2=背风
-  - DEM 栅格 (elevation_10m_projected_region.tif)
-  - 河道中心线 (centerline_final.shp, 筛选 Minjiang 特征)
-输出:
-  - VAI_3km_buffer.tif 等 8 个栅格 (与 _strict 同套字段)
+整合大渡河、金沙江、岷江、雅砻江, 一次运行完成所有河谷的 VAI 3km buffer 计算。
+输出栅格存放于各河谷的 VAI 目录下, 文件名与单河谷版本一致。
 """
 
 import os
@@ -41,32 +31,14 @@ warnings.filterwarnings("ignore")
 # ============================================================
 # 0. Configuration
 # ============================================================
-NDVI_PATH = r"E:\GeoProjects\dry_hot_valley\Minjiang\NDVI\Interannual\NDVI_interannual_mean_region.tif"
-DIRECTION_PATH = r"E:\GeoProjects\dry_hot_valley\Minjiang\geo_factor\windward_leeward_region.tif"
-DEM_PATH = r"E:\GeoProjects\dry_hot_valley\Minjiang\geo_factor\elevation_10m_projected_region.tif"
-CENTERLINE_PATH = r"E:\GeoProjects\dry_hot_valley\valley_area\river_net\centerline_final.shp"
+BASE = r"E:\GeoProjects\dry_hot_valley"
+CENTERLINE_PATH = os.path.join(BASE, r"valley_area\river_net\centerline_final.shp")
 
-OUT_DIR = r"E:\GeoProjects\dry_hot_valley\Minjiang\VAI"
-OUT_VAI_PATH = os.path.join(OUT_DIR, "VAI_3km_buffer.tif")
-OUT_PVAL_PATH = os.path.join(OUT_DIR, "VAI_pvalue_3km_buffer.tif")
-OUT_WW_MEAN_PATH = os.path.join(OUT_DIR, "NDVI_windward_3km_buffer.tif")
-OUT_LW_MEAN_PATH = os.path.join(OUT_DIR, "NDVI_leeward_3km_buffer.tif")
-OUT_WW_CNT_PATH = os.path.join(OUT_DIR, "windward_count_3km_buffer.tif")
-OUT_LW_CNT_PATH = os.path.join(OUT_DIR, "leeward_count_3km_buffer.tif")
-OUT_DEM_PATH = os.path.join(OUT_DIR, "DEM_3km_buffer.tif")
-OUT_FRAC_PATH = os.path.join(OUT_DIR, "valley_fraction_3km_buffer.tif")
-os.makedirs(OUT_DIR, exist_ok=True)
+GRID_SIZE_M = 3000
+PIXEL_SIZE_M = 10
+GRID_PIXELS = GRID_SIZE_M // PIXEL_SIZE_M
 
-# 网格参数
-GRID_SIZE_M = 3000      # 3 km
-PIXEL_SIZE_M = 10       # 10 m
-GRID_PIXELS = GRID_SIZE_M // PIXEL_SIZE_M  # 300 pixels
-
-# 河道 buffer 半径
 BUFFER_RADIUS_M = 4000
-
-# 河道筛选
-MINJIANG_NAME = "岷江干旱河谷"
 
 WINDWARD_VAL = 1
 LEEWARD_VAL = 2
@@ -74,6 +46,41 @@ LEEWARD_VAL = 2
 MIN_PIXEL_THRESHOLD = 50
 NDVI_MIN = 0.1
 MIN_VALLEY_PIXELS = MIN_PIXEL_THRESHOLD * 2
+
+VALLEY_CONFIGS = [
+    {
+        "name_filter": "大渡河干旱河谷",
+        "label": "大渡河",
+        "ndvi_path": os.path.join(BASE, r"Daduhe\NDVI\Interannual\NDVI_interannual_mean_region.tif"),
+        "direction_path": os.path.join(BASE, r"Daduhe\geo_factor\windward_leeward_region.tif"),
+        "dem_path": os.path.join(BASE, r"Daduhe\geo_factor\elevation_10m_projected_region.tif"),
+        "out_dir": os.path.join(BASE, r"Daduhe\VAI"),
+    },
+    {
+        "name_filter": "金沙江干旱河谷",
+        "label": "金沙江",
+        "ndvi_path": os.path.join(BASE, r"Jinshajiang\NDVI\Interannual\NDVI_interannual_mean_region.tif"),
+        "direction_path": os.path.join(BASE, r"Jinshajiang\geo_factor\windward_leeward_region.tif"),
+        "dem_path": os.path.join(BASE, r"Jinshajiang\geo_factor\elevation_10m_projected_region.tif"),
+        "out_dir": os.path.join(BASE, r"Jinshajiang\VAI"),
+    },
+    {
+        "name_filter": "岷江干旱河谷",
+        "label": "岷江",
+        "ndvi_path": os.path.join(BASE, r"Minjiang\NDVI\Interannual\NDVI_interannual_mean_region.tif"),
+        "direction_path": os.path.join(BASE, r"Minjiang\geo_factor\windward_leeward_region.tif"),
+        "dem_path": os.path.join(BASE, r"Minjiang\geo_factor\elevation_10m_projected_region.tif"),
+        "out_dir": os.path.join(BASE, r"Minjiang\VAI"),
+    },
+    {
+        "name_filter": "雅砻江干旱河谷",
+        "label": "雅砻江",
+        "ndvi_path": os.path.join(BASE, r"Yalongjiang\NDVI\Interannual\NDVI_interannual_mean_region.tif"),
+        "direction_path": os.path.join(BASE, r"Yalongjiang\geo_factor\windward_leeward_region.tif"),
+        "dem_path": os.path.join(BASE, r"Yalongjiang\geo_factor\elevation_10m_projected_region.tif"),
+        "out_dir": os.path.join(BASE, r"Yalongjiang\VAI"),
+    },
+]
 
 
 # ============================================================
@@ -88,7 +95,6 @@ def iter_parts(shape):
 
 
 def load_centerline_lines(shp_path, name_filter, dst_crs):
-    """读取 centerline_final 中目标河谷的所有 LineString, 投影到 dst_crs."""
     prj_path = os.path.splitext(shp_path)[0] + ".prj"
     with open(prj_path, "r", errors="ignore") as f:
         src_crs = CRS.from_wkt(f.read())
@@ -112,7 +118,6 @@ def load_centerline_lines(shp_path, name_filter, dst_crs):
 
 
 def build_buffer_mask_10m(lines, buffer_m, ref_height, ref_width, ref_transform):
-    """对 LineStrings 取 union+buffer, 栅格化为 10m mask (1=in buffer, 0=out)."""
     union_buffered = unary_union(lines).buffer(buffer_m)
     geom = union_buffered.__geo_interface__
     mask = rasterize(
@@ -126,36 +131,55 @@ def build_buffer_mask_10m(lines, buffer_m, ref_height, ref_width, ref_transform)
 
 
 # ============================================================
-# 2. Main
+# 2. Per-valley processor
 # ============================================================
-if __name__ == "__main__":
-    t_start = time.time()
+def process_valley(cfg):
+    label = cfg["label"]
+    ndvi_path = cfg["ndvi_path"]
+    direction_path = cfg["direction_path"]
+    dem_path = cfg["dem_path"]
+    out_dir = cfg["out_dir"]
+    name_filter = cfg["name_filter"]
 
-    with rio.open(NDVI_PATH, "r") as src:
+    out_vai_path = os.path.join(out_dir, "VAI_3km_buffer.tif")
+    out_pval_path = os.path.join(out_dir, "VAI_pvalue_3km_buffer.tif")
+    out_ww_mean_path = os.path.join(out_dir, "NDVI_windward_3km_buffer.tif")
+    out_lw_mean_path = os.path.join(out_dir, "NDVI_leeward_3km_buffer.tif")
+    out_ww_cnt_path = os.path.join(out_dir, "windward_count_3km_buffer.tif")
+    out_lw_cnt_path = os.path.join(out_dir, "leeward_count_3km_buffer.tif")
+    out_dem_path = os.path.join(out_dir, "DEM_3km_buffer.tif")
+    out_frac_path = os.path.join(out_dir, "valley_fraction_3km_buffer.tif")
+    os.makedirs(out_dir, exist_ok=True)
+
+    t_start = time.time()
+    print(f"\n{'=' * 60}")
+    print(f"  {label} — {name_filter}")
+    print(f"{'=' * 60}")
+
+    with rio.open(ndvi_path, "r") as src:
         ref_transform = src.transform
         ref_crs = src.crs
         ref_height = src.height
         ref_width = src.width
         ndvi_nodata = src.nodata
-        print(f"NDVI raster: {ref_height} × {ref_width}, CRS={ref_crs}")
-    with rio.open(DEM_PATH, "r") as src:
+        print(f"  NDVI raster: {ref_height} x {ref_width}, CRS={ref_crs}")
+    with rio.open(dem_path, "r") as src:
         dem_nodata = src.nodata
-    with rio.open(DIRECTION_PATH, "r") as src:
+    with rio.open(direction_path, "r") as src:
         dir_nodata = src.nodata
 
-    print(f"Loading centerline: {CENTERLINE_PATH}")
-    print(f"  filter Name = {MINJIANG_NAME!r}")
-    lines = load_centerline_lines(CENTERLINE_PATH, MINJIANG_NAME, ref_crs)
-    print(f"  centerline parts: {len(lines)}")
-    print(f"Building {BUFFER_RADIUS_M / 1000:.1f} km buffer mask ...")
+    print(f"  Centerline: {CENTERLINE_PATH}, filter={name_filter!r}")
+    lines = load_centerline_lines(CENTERLINE_PATH, name_filter, ref_crs)
+    print(f"  Centerline parts: {len(lines)}")
+    print(f"  Building {BUFFER_RADIUS_M / 1000:.1f} km buffer mask ...")
     buffer_mask = build_buffer_mask_10m(
         lines, BUFFER_RADIUS_M, ref_height, ref_width, ref_transform,
     )
-    print(f"  buffer pixels: {int(buffer_mask.sum()):,}")
+    print(f"  Buffer pixels: {int(buffer_mask.sum()):,}")
 
     n_grid_rows = ref_height // GRID_PIXELS
     n_grid_cols = ref_width // GRID_PIXELS
-    print(f"3km grid: {n_grid_rows} × {n_grid_cols} = {n_grid_rows * n_grid_cols} cells")
+    print(f"  3km grid: {n_grid_rows} x {n_grid_cols} = {n_grid_rows * n_grid_cols} cells")
 
     out_transform = from_origin(
         ref_transform.c, ref_transform.f, GRID_SIZE_M, GRID_SIZE_M,
@@ -170,10 +194,10 @@ if __name__ == "__main__":
     dem_arr = np.full((n_grid_rows, n_grid_cols), np.nan, dtype=np.float32)
     frac_arr = np.zeros((n_grid_rows, n_grid_cols), dtype=np.float32)
 
-    print("\nProcessing 3km grids ...")
-    src_ndvi = rio.open(NDVI_PATH, "r")
-    src_dir = rio.open(DIRECTION_PATH, "r")
-    src_dem = rio.open(DEM_PATH, "r")
+    print("  Processing 3km grids ...")
+    src_ndvi = rio.open(ndvi_path, "r")
+    src_dir = rio.open(direction_path, "r")
+    src_dem = rio.open(dem_path, "r")
 
     valid_count = 0
     skipped_low_frac = 0
@@ -242,7 +266,7 @@ if __name__ == "__main__":
         if (gi + 1) % 10 == 0 or gi == n_grid_rows - 1:
             pct = (gi + 1) / n_grid_rows * 100.0
             print(
-                f"  Row {gi + 1}/{n_grid_rows} ({pct:.1f}%)  "
+                f"    Row {gi + 1}/{n_grid_rows} ({pct:.1f}%)  "
                 f"valid={valid_count}, low_frac={skipped_low_frac}, "
                 f"low_pixel={skipped_low_pixel}"
             )
@@ -266,43 +290,59 @@ if __name__ == "__main__":
     float_profile = {**base_profile, "dtype": "float32", "nodata": np.nan}
     int_profile = {**base_profile, "dtype": "int32", "nodata": -1}
 
-    for path, data, profile, label in [
-        (OUT_VAI_PATH, vai_arr, float_profile, "VAI"),
-        (OUT_PVAL_PATH, pval_arr, float_profile, "p-value"),
-        (OUT_WW_MEAN_PATH, ww_mean_arr, float_profile, "NDVI_windward"),
-        (OUT_LW_MEAN_PATH, lw_mean_arr, float_profile, "NDVI_leeward"),
-        (OUT_DEM_PATH, dem_arr, float_profile, "DEM_buffer"),
-        (OUT_FRAC_PATH, frac_arr, float_profile, "buffer_fraction"),
-        (OUT_WW_CNT_PATH, ww_cnt_arr, int_profile, "windward_count"),
-        (OUT_LW_CNT_PATH, lw_cnt_arr, int_profile, "leeward_count"),
+    for path, data, profile, desc in [
+        (out_vai_path, vai_arr, float_profile, "VAI"),
+        (out_pval_path, pval_arr, float_profile, "p-value"),
+        (out_ww_mean_path, ww_mean_arr, float_profile, "NDVI_windward"),
+        (out_lw_mean_path, lw_mean_arr, float_profile, "NDVI_leeward"),
+        (out_dem_path, dem_arr, float_profile, "DEM_buffer"),
+        (out_frac_path, frac_arr, float_profile, "buffer_fraction"),
+        (out_ww_cnt_path, ww_cnt_arr, int_profile, "windward_count"),
+        (out_lw_cnt_path, lw_cnt_arr, int_profile, "leeward_count"),
     ]:
         with rio.open(path, "w", **profile) as dst:
             dst.write(data.astype(profile["dtype"]), 1)
-        print(f"  {label} -> {path}")
+        print(f"    {desc} -> {path}")
 
     elapsed = time.time() - t_start
     vai_valid = vai_arr[np.isfinite(vai_arr)]
     pval_valid = pval_arr[np.isfinite(pval_arr)]
-    print(f"\n{'=' * 60}")
-    print(f"Total time: {elapsed / 60:.1f} min")
-    print(
-        f"3km grids total={n_grid_rows * n_grid_cols}, valid={valid_count}, "
-        f"low_frac={skipped_low_frac}, low_pixel={skipped_low_pixel}"
-    )
+    print(f"  {label} done in {elapsed / 60:.1f} min")
+    print(f"  Valid cells: {valid_count}, low_frac: {skipped_low_frac}, low_pixel: {skipped_low_pixel}")
     if len(vai_valid) > 0:
-        print(f"VAI range: [{vai_valid.min():.3f}, {vai_valid.max():.3f}] %")
-        print(
-            f"VAI > 0: {(vai_valid > 0).sum()}/{len(vai_valid)} "
-            f"({(vai_valid > 0).mean() * 100:.1f}%)"
-        )
-        print(
-            f"VAI < 0: {(vai_valid < 0).sum()}/{len(vai_valid)} "
-            f"({(vai_valid < 0).mean() * 100:.1f}%)"
-        )
+        print(f"  VAI: [{vai_valid.min():.3f}, {vai_valid.max():.3f}]%, "
+              f">0: {(vai_valid > 0).mean() * 100:.1f}%")
     if len(pval_valid) > 0:
-        print(
-            f"Significant (p<0.05): "
-            f"{(pval_valid < 0.05).sum()}/{len(pval_valid)} "
-            f"({(pval_valid < 0.05).mean() * 100:.1f}%)"
-        )
+        print(f"  Sig (p<0.05): {(pval_valid < 0.05).mean() * 100:.1f}%")
+
+    return {
+        "label": label,
+        "valid_count": valid_count,
+        "elapsed_min": elapsed / 60,
+        "n_total_grids": n_grid_rows * n_grid_cols,
+    }
+
+
+# ============================================================
+# 3. Main
+# ============================================================
+if __name__ == "__main__":
+    t_all = time.time()
+    print("=" * 60)
+    print("  Batch 3km buffer VAI — all four dry-hot valleys")
+    print("=" * 60)
+
+    results = []
+    for cfg in VALLEY_CONFIGS:
+        result = process_valley(cfg)
+        results.append(result)
+
+    total_elapsed = time.time() - t_all
+    print(f"\n{'=' * 60}")
+    print("  Summary")
+    print(f"{'=' * 60}")
+    for r in results:
+        print(f"  {r['label']}: {r['valid_count']}/{r['n_total_grids']} valid "
+              f"({r['elapsed_min']:.1f} min)")
+    print(f"  Total time: {total_elapsed / 60:.1f} min")
     print("Done.")

@@ -2,12 +2,12 @@
 # @Time    : 2026/5/7
 # @Email   : chaoqiezi.one@qq.com
 # @Wechat  : GIS茄子
-# @FileName: VAI_buffer_valley_threshold.py
+# @FileName: VAI_altitude_gradient_buffer.py
 
 """
 This script is used to 在4km河道buffer内的3km VAI上做迎背风海拔阈值分析
 
-输入: VAI_3km_buffer.tif (由 VAI_buffer_valley_3km.py 生成)
+输入: VAI_3km_buffer.tif (由 VAI_spatial_distribution_buffer.py 生成)
 输出: 与 VAI_strict_valley_threshold.py 同结构, 文件名后缀 _buffer
 绘图: panel D 叠加岷江中心线 (而非干热河谷polygon边界)
 """
@@ -56,7 +56,7 @@ OUT_FIG = os.path.join(OUT_CHART_DIR, "VAI_buffer_threshold.png")
 
 MINJIANG_NAME = "岷江干旱河谷"
 VALLEY_LABEL = "岷江"
-BUFFER_KM = 4.0  # 与 VAI_buffer_valley_3km.py 一致, 仅用于标题文案
+BUFFER_KM = 4.0  # 与 VAI_spatial_distribution_buffer.py 一致, 仅用于标题文案
 
 # 网格筛选
 VALLEY_FRACTION_MIN = 0.10
