@@ -33,12 +33,13 @@ if __name__ == '__main__':
 
         cur_out_filename = f'wind_dir_{cur_pressure_level:.0f}hPa_10m.tif'
         cur_out_path = os.path.join(out_dir, cur_out_filename)
-        if os.path.exists(cur_out_path):
-            print(f'Pressure level {cur_pressure_level:.0f}hPa: wind direction already exists!')
-            with rio.open(cur_out_path, 'r+') as dst:
-                dst.nodata = np.nan
-            build_overviews(cur_out_path)
-            continue
+        # if os.path.exists(cur_out_path):  # pipeline统一管理跳过, 单独运行时取消注释
+        #     print(f'Pressure level {cur_pressure_level:.0f}hPa: wind direction already exists!')
+        #     with rio.open(cur_out_path, 'r+') as dst:
+        #         dst.nodata = np.nan
+        #     build_overviews(cur_out_path)
+        #     continue
+
 
         print(f'Computing wind direction for {cur_pressure_level:.0f}hPa ...')
 

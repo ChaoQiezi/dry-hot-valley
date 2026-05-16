@@ -34,10 +34,11 @@ if __name__ == '__main__':
     for cur_path in img_paths:
         cur_out_name = os.path.basename(cur_path)
         cur_out_path = os.path.join(out_dir, cur_out_name)
-        if os.path.exists(cur_out_path):
-            print(f'{cur_out_name} exists, skip.')
-            build_overviews(cur_out_path)
-            continue
+        # if os.path.exists(cur_out_path):  # pipeline统一管理跳过, 单独运行时取消注释
+        #     print(f'{cur_out_name} exists, skip.')
+        #     build_overviews(cur_out_path)
+        #     continue
+
 
         print(f'Masking {cur_out_name} ...')
 

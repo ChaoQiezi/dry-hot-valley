@@ -24,6 +24,7 @@ if __name__ == '__main__':
     out_path = r'E:\GeoProjects\dry_hot_valley\GeoFactor\windward_leeward\windward_leeward.tif'
     mirror_out_path = r'G:\GeoProjects\dry_hot_valley\windward_leeward\windward_leeward.tif'
     slope_threshold = 5.0
+    chunks = 4096
     # ================================================================
 
     # 验证输入对齐
@@ -41,7 +42,9 @@ if __name__ == '__main__':
     out_profile = we_profile.copy()
     out_profile['tiled'] = True
     out_profile['compress'] = out_profile.get('compress', 'lzw')
-    out_profile['predictor'] = out_profile.get('predictor', 3)
+    out_profile['predictor'] = 2
+    out_profile['blockxsize'] = chunks
+    out_profile['blockysize'] = chunks
     out_profile['dtype'] = 'uint8'
     out_profile['nodata'] = 255
 

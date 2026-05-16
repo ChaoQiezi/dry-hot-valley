@@ -133,8 +133,8 @@ def main():
 
     steps_outputs = get_step_outputs()
     steps = [
-        (0, step0_script, 'Step 0: ERA5 0.25° u/v/wind_dir'),
-        (1, step1_script, 'Step 1: Reproject 0.25° → 10m u/v'),
+        # (0, step0_script, 'Step 0: ERA5 0.25° u/v/wind_dir'),
+        # (1, step1_script, 'Step 1: Reproject 0.25° → 10m u/v'),
         (2, step2_script, 'Step 2: DEM mask 10m u/v'),
         (3, step3_script, 'Step 3: Wind direction 10m'),
         (4, step4_script, 'Step 4: SAGA Wind Effect'),
