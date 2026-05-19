@@ -12,7 +12,7 @@ s2_cloud_dir = r'COPERNICUS/S2_CLOUD_PROBABILITY'  # Sentinel-2 Cloud Probabilit
 # 西南地区外接矩形 (基于 Xinan.shp). Rectangle 而非 FeatureCollection 以防止掩膜裁剪
 region = ee.Geometry.Rectangle([92.1, 22.4, 106.6, 35.6])  # [西, 南, 东, 北]
 start_date_str = '2019-01-01'
-end_date_str = '2021-12-31'
+end_date_str = '2025-12-31'
 sos_month_start = 5  # growing season 开始月份
 sos_month_end = 9  # growing season 截止月份
 start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
