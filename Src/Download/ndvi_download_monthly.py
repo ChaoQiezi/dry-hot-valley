@@ -17,10 +17,10 @@ from qiezi.ee_utils import ee_export_image, image_float2int
 
 # 准备
 ee.Initialize(project='chaoqiezipython')
-region_dir = 'projects/chaoqiezipython/assets/region/Chuanxi'
 s2_dir = 'COPERNICUS/S2_SR_HARMONIZED'  # Sentinel-2 SR HARMONIZED
 s2_cloud_dir = r'COPERNICUS/S2_CLOUD_PROBABILITY'  # Sentinel-2 Cloud Probability
-region = ee.FeatureCollection(region_dir)  # 川西地区
+# 西南地区外接矩形 (基于 Xinan.shp). Rectangle 而非 FeatureCollection 以防止掩膜裁剪
+region = ee.Geometry.Rectangle([92.1, 22.4, 106.6, 35.6])  # [西, 南, 东, 北]
 start_date_str = '2024-01-01'
 end_date_str = '2024-12-31'
 start_date = datetime.strptime(start_date_str, '%Y-%m-%d')

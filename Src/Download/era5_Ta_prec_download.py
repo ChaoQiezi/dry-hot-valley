@@ -22,7 +22,7 @@ product_type = ["monthly_averaged_reanalysis"]
 var_names = ["total_precipitation", "2m_temperature", ]
 start_date = datetime(2019, 1, 1)
 end_date = datetime(2025, 12, 31)
-area_extent = [36, 96, 24, 106]  # (北, 西, 南, 东)
+area_extent = [35.6, 92.1, 22.4, 106.6]  # 西南地区 (北, 西, 南, 东)
 
 # 下载
 year_range = range(start_date.year, end_date.year + 1)
