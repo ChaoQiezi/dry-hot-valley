@@ -18,7 +18,7 @@ import shutil
 
 # ======================== Configuration ========================
 saga_cmd = r'D:\Softwares\saga-9.11.3_msw\saga_cmd.exe'
-dem_path = r'G:\GeoProjects\dry_hot_valley\geo_factor\DEM\GLO-30\elevation_10m_projected.tif'
+dem_path = r'G:\GeoProjects\dry_hot_valley\geo_factor\DEM\xinan\elevation_10m_proj_xinan_region.tif'
 wind_dir_path = r'G:\GeoProjects\dry_hot_valley\wind_direction\10m\wind_dir_600hPa_10m.tif'
 wind_effect_dir = r'G:\GeoProjects\dry_hot_valley\wind_effect'
 wind_effect_tif = os.path.join(wind_effect_dir, 'wind_effect.tif')

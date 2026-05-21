@@ -17,7 +17,7 @@ from qiezi.geo import build_overviews
 
 if __name__ == '__main__':
     # ======================== Configuration ========================
-    in_dir = r'G:\GeoProjects\dry_hot_valley\u_v\10m\masked'
+    in_dir = r'G:\GeoProjects\dry_hot_valley\u_v\10m\unmasked'
     out_dir = r'G:\GeoProjects\dry_hot_valley\wind_direction\10m'
     pressure_levels = [500, 600, 700, 800]
     # ================================================================
@@ -49,6 +49,7 @@ if __name__ == '__main__':
             out_profile['compress'] = out_profile.get('compress', 'lzw')
             out_profile['predictor'] = out_profile.get('predictor', 3)
             out_profile['nodata'] = np.nan
+            out_profile['bigtif'] = True
             block_windows = list(u_src.block_windows())
 
             with rio.open(cur_out_path, 'w', **out_profile) as dst:

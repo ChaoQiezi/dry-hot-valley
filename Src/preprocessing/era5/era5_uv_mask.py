@@ -19,7 +19,7 @@ if __name__ == '__main__':
     # ======================== Configuration ========================
     in_dir = r'G:\GeoProjects\dry_hot_valley\u_v\10m\unmasked'
     out_dir = r'G:\GeoProjects\dry_hot_valley\u_v\10m\masked'
-    ref_path = r'G:\GeoProjects\dry_hot_valley\geo_factor\DEM\GLO-30\elevation_10m_projected.tif'
+    ref_path = r'G:\GeoProjects\dry_hot_valley\geo_factor\DEM\xinan\elevation_10m_proj_xinan_region.tif'
     # ================================================================
 
     os.makedirs(out_dir, exist_ok=True)

@@ -33,11 +33,11 @@ from qiezi.common import zip2nc
 
 
 # 准备
-in_dir = r'I:\DataHub\ERA5\ERA5\pressure_level\multi_var\backup'
+in_dir = r'I:\DataHub\ERA5\ERA5\pressure_level\multi_var'
 out_uv_dir = r'G:\GeoProjects\dry_hot_valley\u_v\0.25deg'
 out_directon_dir = r'G:\GeoProjects\dry_hot_valley\wind_direction\0.25deg'
-img_ref_path = r"G:\GeoProjects\dry_hot_valley\geo_factor\DEM\GLO-30\elevation_10m_projected.tif"
-start_year = 2017
+img_ref_path = r"G:\GeoProjects\dry_hot_valley\geo_factor\DEM\xinan\elevation_10m_proj_xinan_region.tif"
+start_year = 2019
 end_year = 2025
 out_nc_dir = os.path.dirname(in_dir)
 start_month = 5  # 5月份
@@ -130,7 +130,7 @@ for pressure_ix, pressure_level in enumerate(pressure_levels):
     # out_v_path = os.path.join(out_dir, f'v_{pressure_level}hPa_10m_projected.tif')
     # warp_by_tiff(out_u_path, u_temp_path, img_ref_path)
     # warp_by_tiff(out_v_path, v_temp_path, img_ref_path)
-    #
+
     # temp_paths.append(u_temp_path)
     # temp_paths.append(v_temp_path)
     print(f'Pressure level {pressure_level} processed.')

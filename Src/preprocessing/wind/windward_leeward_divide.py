@@ -20,7 +20,7 @@ from qiezi.geo import build_overviews
 if __name__ == '__main__':
     # ======================== Configuration ========================
     wind_effect_path = r'G:\GeoProjects\dry_hot_valley\wind_effect\wind_effect.tif'
-    slope_path = r'E:\GeoProjects\dry_hot_valley\GeoFactor\Slope\slope_10m_projected.tif'
+    slope_path = r'G:\GeoProjects\dry_hot_valley\geo_factor\Slope\xinan\slope_10m_proj_xinan_region.tif'
     out_path = r'E:\GeoProjects\dry_hot_valley\GeoFactor\windward_leeward\windward_leeward.tif'
     mirror_out_path = r'G:\GeoProjects\dry_hot_valley\windward_leeward\windward_leeward.tif'
     slope_threshold = 5.0

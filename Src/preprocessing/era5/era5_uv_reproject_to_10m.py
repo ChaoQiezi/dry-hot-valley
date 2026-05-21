@@ -5,7 +5,7 @@
 # @FileName: era5_uv_reproject_to_10m.py
 
 """
-This script is used to 将生长季(5-9月)ERA5 0.25° u/v 重投影+重采样到10m UTM 47N,
+This script is used to 将生长季(5-9月)ERA5 0.25° u/v 重投影+重采样到10m Albers 等面积圆锥投影,
 替代此前 ArcGIS Pro 手动操作。
 """
 
@@ -19,7 +19,7 @@ gdal.DontUseExceptions()
 # ======================== Configuration ========================
 in_dir = r'G:\GeoProjects\dry_hot_valley\u_v\0.25deg'
 out_dir = r'G:\GeoProjects\dry_hot_valley\u_v\10m\unmasked'
-ref_path = r'G:\GeoProjects\dry_hot_valley\geo_factor\DEM\GLO-30\elevation_10m_projected.tif'
+ref_path = r'G:\GeoProjects\dry_hot_valley\geo_factor\DEM\xinan\elevation_10m_proj_xinan_region.tif'
 pressure_levels = [500, 600, 700, 800]
 overwrite = True
 # ================================================================

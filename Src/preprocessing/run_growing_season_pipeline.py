@@ -5,14 +5,13 @@
 # @FileName: run_growing_season_pipeline.py
 
 """
-生长季(5-9月)风场数据全链条重算 —— 顺序执行 Step 0 → Step 1 → ... → Step 5
+生长季(5-9月)风场数据全链条重算 —— 顺序执行 Step 0 → Step 1 → ... → Step 4
 
 Step 0: era5_u_v_preprocess.py         → 0.25° u/v/wind_dir (ERA5 NC → 5-9月加权平均)
 Step 1: era5_uv_reproject_to_10m.py    → 10m u/v unmasked (重投影+重采样)
-Step 2: era5_u_v_postgis_preprocess.py → 10m u/v masked (DEM掩膜)
-Step 3: wind_direction_cal.py          → 10m 风向 (4个气压层)
-Step 4: saga_wind_effect.py            → SAGA Wind Effect (仅600hPa)
-Step 5: windward_leeward_divide.py     → 迎风/背风二分类
+Step 2: wind_direction_cal.py          → 10m 风向 (4个气压层)
+Step 3: saga_wind_effect.py            → SAGA Wind Effect (仅600hPa)
+Step 4: windward_leeward_divide.py     → 迎风/背风二分类
 
 在 PyCharm 中运行此脚本，可观察每一步的进度和输出。
 """
@@ -27,20 +26,19 @@ python_exe = r'D:/Softwares/Anaconda3/envs/geo/python.exe'
 project_src = r'F:\PyProJect\dry_hot_valley\Src\preprocessing'
 
 # 各步骤脚本路径
-step0_script = os.path.join(project_src, 'era5', 'era5_u_v_preprocess.py')
+step0_script = os.path.join(project_src, 'era5', 'era5_uv_preprocess.py')
 step1_script = os.path.join(project_src, 'era5', 'era5_uv_reproject_to_10m.py')
-step2_script = os.path.join(project_src, 'era5', 'era5_u_v_postgis_preprocess.py')
-step3_script = os.path.join(project_src, 'wind', 'wind_direction_cal.py')
-step4_script = os.path.join(project_src, 'wind', 'saga_wind_effect.py')
-step5_script = os.path.join(project_src, 'wind', 'windward_leeward_divide.py')
+step2_script = os.path.join(project_src, 'wind', 'wind_direction_cal.py')
+step3_script = os.path.join(project_src, 'wind', 'saga_wind_effect.py')
+step4_script = os.path.join(project_src, 'wind', 'windward_leeward_divide.py')
 
-# SAGA 相关 (用于 Step 4 的智能导出判断)
+# SAGA 相关 (用于 Step 3 的智能导出判断)
 wind_effect_tif = r'G:\GeoProjects\dry_hot_valley\wind_effect\wind_effect.tif'
 wind_effect_sgrd = r'G:\GeoProjects\dry_hot_valley\wind_effect\wind_effect.sgrd'
 saga_cmd = r'D:\Softwares\saga-9.11.3_msw\saga_cmd.exe'
 
 # 是否强制全部重跑 (False = 跳过已存在的输出)
-force_rerun = True
+force_rerun = False
 # ================================================================
 
 
@@ -88,17 +86,12 @@ def get_step_outputs():
             '10m u/v unmasked'
         ),
         2: (
-            [os.path.join(base, 'u_v', '10m', 'masked', f'{var}_{lev}hPa_10m.tif')
-             for var in ['u', 'v'] for lev in levels],
-            '10m u/v masked'
-        ),
-        3: (
             [os.path.join(base, 'wind_direction', '10m', f'wind_dir_{lev}hPa_10m.tif')
              for lev in levels],
             '10m wind direction'
         ),
-        4: ([wind_effect_tif], 'wind_effect.tif'),
-        5: (
+        3: ([wind_effect_tif], 'wind_effect.tif'),
+        4: (
             [r'E:\GeoProjects\dry_hot_valley\GeoFactor\windward_leeward\windward_leeward.tif'],
             'windward_leeward.tif'
         ),
@@ -133,12 +126,11 @@ def main():
 
     steps_outputs = get_step_outputs()
     steps = [
-        # (0, step0_script, 'Step 0: ERA5 0.25° u/v/wind_dir'),
-        # (1, step1_script, 'Step 1: Reproject 0.25° → 10m u/v'),
-        (2, step2_script, 'Step 2: DEM mask 10m u/v'),
-        (3, step3_script, 'Step 3: Wind direction 10m'),
-        (4, step4_script, 'Step 4: SAGA Wind Effect'),
-        (5, step5_script, 'Step 5: Windward/Leeward classification'),
+        (0, step0_script, 'Step 0: ERA5 0.25° u/v/wind_dir'),
+        (1, step1_script, 'Step 1: Reproject 0.25° → 10m u/v'),
+        (2, step2_script, 'Step 2: Wind direction 10m'),
+        (3, step3_script, 'Step 3: SAGA Wind Effect'),
+        (4, step4_script, 'Step 4: Windward/Leeward classification'),
     ]
 
     upstream_was_run = False  # 链式触发: 上游重跑则下游必须重跑
@@ -152,15 +144,15 @@ def main():
                 print(f'[{time.strftime("%H:%M:%S")}] {description} -- outputs exist, SKIP.')
                 continue
 
-        # Step 4 特殊处理: wind_effect.sdat 已最新 → 仅导出
-        if step_num == 4 and not force_rerun and not upstream_was_run:
+        # Step 3 特殊处理: wind_effect.sdat 已最新 → 仅导出
+        if step_num == 3 and not force_rerun and not upstream_was_run:
             wind_dir_sdat = os.path.join(os.path.dirname(wind_effect_sgrd), 'wind_dir.sdat')
             wind_effect_sdat = os.path.join(os.path.dirname(wind_effect_sgrd), 'wind_effect.sdat')
             if os.path.exists(wind_effect_sdat) and os.path.exists(wind_dir_sdat):
                 if os.path.getmtime(wind_effect_sdat) > os.path.getmtime(wind_dir_sdat):
                     print(f'\n[{time.strftime("%H:%M:%S")}] wind_effect.sdat is newer → export only')
                     if run_saga_export_only():
-                        print(f'[{time.strftime("%H:%M:%S")}] Step 4 (export only) -- OK')
+                        print(f'[{time.strftime("%H:%M:%S")}] Step 3 (export only) -- OK')
                         continue
                     print('  Export failed, falling back to full SAGA run.')
 
