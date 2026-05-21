@@ -7,13 +7,15 @@
 """
 GLO-30 DEM/slope/aspect VRT 拼接 + 裁剪至西南地区外接矩形 (WGS84, ~30m, 不掩膜).
 
-输入: I:\DataHub\GLO-30_DEM\{dem,slope,aspect}\*.tif
-输出: G:\GeoProjects\dry_hot_valley\geo_factor\{DEM,Slope,Aspect}\xinan\*_30m_geo_xinan_region.tif
+输入: I:/DataHub/GLO-30_DEM/{dem,slope,aspect}/*.tif
+输出: G:/GeoProjects/dry_hot_valley/geo_factor/{DEM,Slope,Aspect}/xinan/*_30m_geo_xinan_region.tif
 """
 
 import os
 from glob import glob
 from osgeo import gdal, gdalconst
+
+from qiezi.geo import build_overviews
 
 gdal.DontUseExceptions()
 
@@ -31,7 +33,7 @@ data_types = {
     'Aspect': {'subfolder': 'aspect', 'out_name': 'aspect_30m_geo_xinan_region.tif'},
 }
 
-overwrite = False
+overwrite = True
 # ================================================================
 
 os.makedirs(temp_vrt_dir, exist_ok=True)
@@ -82,14 +84,19 @@ for dtype, info in data_types.items():
         xRes=None,  # 保持原始分辨率 (~30m)
         yRes=None,
         resampleAlg=gdal.GRA_Bilinear if dtype in ('DEM', 'Slope') else gdal.GRA_NearestNeighbour,
+        dstNodata=float('nan'),  # 边界无数据区设 NaN，避免填 0 污染后续分析
         creationOptions=creation_options,
         multithread=True,
-        warpMemoryLimit=2048,  # 限制内存，避免强制逐块 I/O 退化
+        warpMemoryLimit=2048,
     )
     gdal.Warp(out_path, vrt_path, options=warp_options)
 
     # 清理 VRT
     os.remove(vrt_path)
+
+    # 构建金字塔
+    build_overviews(out_path)
+
     print(f'[{dtype}] -> {out_path}')
 
 print('\nAll mosaic + clip operations completed.')

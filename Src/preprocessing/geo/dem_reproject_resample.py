@@ -4,17 +4,17 @@
 # @Wechat  : GIS茄子
 # @FileName: dem_reproject_resample.py
 
-"""
-DEM 投影转换 (WGS84 → 自定义 Albers 等面积圆锥投影) 并重采样至 10m,
+r"""
+DEM 投影转换 (WGS84 -> 自定义 Albers 等面积圆锥投影) 并重采样至 10m,
 然后基于 10m DEM 计算坡度和坡向.
 
-输入: G:\GeoProjects\dry_hot_valley\geo_factor\DEM\xinan\elevation_30m_geo_xinan_region.tif
-输出: G:\GeoProjects\dry_hot_valley\geo_factor\DEM\xinan\elevation_10m_proj_xinan_region.tif
-      G:\GeoProjects\dry_hot_valley\geo_factor\Slope\xinan\slope_10m_proj_xinan_region.tif
-      G:\GeoProjects\dry_hot_valley\geo_factor\Aspect\xinan\aspect_10m_proj_xinan_region.tif
+输入: G:/GeoProjects/dry_hot_valley/geo_factor/DEM/xinan/elevation_30m_geo_xinan_region.tif
+输出: G:/GeoProjects/dry_hot_valley/geo_factor/DEM/xinan/elevation_10m_proj_xinan_region.tif
+      G:/GeoProjects/dry_hot_valley/geo_factor/Slope/xinan/slope_10m_proj_xinan_region.tif
+      G:/GeoProjects/dry_hot_valley/geo_factor/Aspect/xinan/aspect_10m_proj_xinan_region.tif
 
 投影: 自定义 Albers 等面积圆锥投影 (方案 A)
-  中央经线: 99.35°E, 标准纬线: 24°N / 34°N, 起始纬度: 29°N, 基准面: WGS84
+  中央经线: 99.35degE, 标准纬线: 24degN / 34degN, 起始纬度: 29degN, 基准面: WGS84
 
 注意:
 - 坡度和坡向直接从 10m 投影 DEM 计算 (gdaldem), 而非对 Viz 文件重采样,
@@ -24,6 +24,8 @@ DEM 投影转换 (WGS84 → 自定义 Albers 等面积圆锥投影) 并重采样
 
 import os
 from osgeo import gdal, gdalconst
+
+from qiezi.geo import build_overviews
 
 gdal.DontUseExceptions()
 
@@ -79,6 +81,8 @@ else:
         format='GTiff',
         dstSRS=albers_proj4,
         srcSRS='EPSG:4326',
+        srcNodata=float('nan'),
+        dstNodata=float('nan'),
         xRes=10,
         yRes=10,
         resampleAlg=gdal.GRA_Bilinear,
@@ -87,6 +91,7 @@ else:
         warpMemoryLimit=3072,
     )
     gdal.Warp(dem_10m_path, dem_30m_path, options=warp_options)
+    build_overviews(dem_10m_path)
     print(f'  -> {dem_10m_path}')
 
 # ================================================================
@@ -100,12 +105,12 @@ else:
 
     slope_options = gdal.DEMProcessingOptions(
         format='GTiff',
-        processing='slope',
         slopeFormat='degree',
         computeEdges=True,
         creationOptions=creation_options,
     )
     gdal.DEMProcessing(slope_10m_path, dem_10m_path, 'slope', options=slope_options)
+    build_overviews(slope_10m_path)
     print(f'  -> {slope_10m_path}')
 
 # ================================================================
@@ -119,11 +124,11 @@ else:
 
     aspect_options = gdal.DEMProcessingOptions(
         format='GTiff',
-        processing='aspect',
         computeEdges=True,
         creationOptions=creation_options,
     )
     gdal.DEMProcessing(aspect_10m_path, dem_10m_path, 'aspect', options=aspect_options)
+    build_overviews(aspect_10m_path)
     print(f'  -> {aspect_10m_path}')
 
 print('\nAll DEM reprojection + resample + slope/aspect completed.')
