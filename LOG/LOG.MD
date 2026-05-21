@@ -338,3 +338,140 @@ run_vai_buffer_pipeline.py 创建 (Step 1→3, Step 4 注释可选)
 | 组会纪要 | Assets/Ref/group_meeting/2026-05-17_组会纪要.md |
 | 进展文档 | Assets/Ref/claude/PROGRESS_2026-05-18.md |
 | 废弃代码 | History/ |
+| DEM解压 | Src/preprocessing/geo/unzip_dem.py |
+| DEM拼接 | Src/preprocessing/geo/dem_mosaic_clip.py |
+| DEM投影+重采样 | Src/preprocessing/geo/dem_reproject_resample.py |
+
+
+# 2026/05/19 DEM 预处理代码编写
+
+GLO-30 DEM 数据已于 I:\DataHub\GLO-30_DEM 就位 (6 Tile, ~30 GB).
+现有 DEM 预处理全在 ArcGIS Pro 手动完成, 无代码留存, 故从头编写.
+
+## 数据源结构
+
+    I:\DataHub\GLO-30_DEM\
+    
+        ├── Tile1_92.1-94.6E_DEM.tar.gz    → output_hh.tif (Float32, ~1.6 GB)
+        
+        ├── Tile1_92.1-94.6E_Viz.tar.gz    → viz.hh_slope.tif + viz.hh_aspect.tif (~1.9 GB each)
+        
+        ├── ... (Tile2–Tile6, 覆盖 92.1°E–106.6°E)
+
+## 处理链条
+
+```
+unzip_dem.py  →  dem_mosaic_clip.py  →  dem_reproject_resample.py
+ (解压)           (VRT拼接+裁剪 WGS84)     (投影Albers+10m+坡度坡向)
+```
+
+## 1. unzip_dem.py
+
+- 6 × Tile*_DEM.tar.gz → dem\Tile*_dem.tif
+- 6 × Tile*_Viz.tar.gz → slope\Tile*_slope.tif + aspect\Tile*_aspect.tif
+- 已存在跳过, 支持断点续传
+
+## 2. dem_mosaic_clip.py
+
+- VRT 拼接 (参考 mcd12q1_process.py) → gdal.Warp 裁剪
+- 西南地区外接矩形 [92.1, 22.4, 106.6, 35.6] (WGS84)
+- 仅矩形裁剪, 不掩膜 (region)
+- 输出: G:\GeoProjects\...\{DEM,Slope,Aspect}\xinan\*_30m_geo_xinan_region.tif
+- 同时处理 DEM / Slope / Aspect 三类数据
+
+## 3. dem_reproject_resample.py
+
+- 投影: 自定义 Albers 等面积圆锥投影
+  +proj=aea +lat_1=24 +lat_2=34 +lat_0=29 +lon_0=99.35 +datum=WGS84
+  (西南地区 92.1°E–106.6°E, 22.4°N–35.6°N 优化, 取代原川西 UTM 47N)
+- 重采样: 30m → 10m (Bilinear)
+- 坡度坡向: 直接从 10m 投影 DEM 用 gdaldem 计算 (避免 Viz 角度数据重采样畸变)
+- 输出: G:\GeoProjects\...\{DEM,Slope,Aspect}\xinan\*_10m_proj_xinan_region.tif
+
+## 关键决策
+
+| 决策 | 理由 |
+|------|------|
+| Albers 等面积 vs UTM | 西南地区跨 4 个 UTM 带 (45N–48N); 等面积适配后续格网统计 |
+| 自定义标准纬线 (24°/34°) | 比中国全国 Albers (25°/47°) 更贴合 22.4°N–35.6°N |
+| xinan 子文件夹 | 不覆盖旧川西 GLO-30/ 文件 |
+| 坡向坡度从 10m DEM 重算 | 避免 30m→10m 重采样对 0°/360° 角度数据引入插值畸变 |
+| build_overviews 金字塔 | 与 era5/ wind/ 脚本一致, 用 qiezi.geo.build_overviews |
+
+## Bug 修复记录
+
+| 问题 | 原因 | 修复 |
+|------|------|------|
+| SyntaxError: unicodeescape | docstring 中 `\xinan` 的 `\x` 被解析为十六进制转义 | docstring 改 raw string + 反斜杠改正斜杠 |
+| 边界无数据区填 0 | gdal.Warp 未设 dstNodata; 源文件本身无 NoData 元数据 | dstNodata=float('nan') |
+| DEMProcessingOptions TypeError | 捏造了 processing= 参数 (实际是 DEMProcessing() 的位置参数) | 移除 processing= |
+| NoData 传播断裂 | dem_reproject_resample.py Warp 未设 srcNodata/dstNodata | srcNodata=dstNodata=float('nan') |
+
+## 代码位置
+
+- Src/preprocessing/geo/unzip_dem.py
+- Src/preprocessing/geo/dem_mosaic_clip.py
+- Src/preprocessing/geo/dem_reproject_resample.py
+
+
+# 2026/05/20 DEM 预处理代码修复
+
+- NoData 链修复: 两脚本 gdal.Warp 均加 dstNodata=float('nan')
+- DEMProcessingOptions 移除不存在的 processing= 形参
+- 验证编译通过
+
+
+# 2026/05/20 ERA5 代码适配西南地区 DEM
+
+DEM 重复后（05-19），era5/ 和 wind/ 脚本中的硬编码路径失效，需更新。同时，西南地区
+范围远超原川西，两个架构问题暴露。
+
+## 1. DEM/Slope 路径更新 (5 文件)
+
+DEM 路径于 2026/05/19 更改为 xinan/ 子文件夹。5 个文件引用旧路径，已更新：
+
+| 文件 | 变量 | 旧路径 | 新路径 |
+|------|------|--------|--------|
+| era5_uv_preprocess.py | img_ref_path | ...\GLO-30\elevation_10m_projected.tif | ...\xinan\elevation_10m_proj_xinan_region.tif |
+| era5_uv_reproject_to_10m.py | ref_path | 同上，docstring UTM 47N | 同上，docstring Albers |
+| era5_uv_mask.py | ref_path | 同上 | 同上 |
+| saga_wind_effect.py | dem_path | 同上 | 同上 |
+| windward_leeward_divide.py | slope_path | E:\...\Slope\slope_10m_projected.tif | G:\...\Slope\xinan\slope_10m_proj_xinan_region.tif |
+
+未修改: era5_t2m_tp_monthly/yearly（ERA5-Land，无 DEM 引用）、wind_direction_cal.py（仅 u/v）。
+
+## 2. DEM 掩膜步骤废弃
+
+`era5_uv_mask.py`（原名 era5_u_v_postgis_preprocess.py）将 DEM NoData 区域对 u/v 做掩膜。
+西南地区 DEM 覆盖整个西南地区范围，无 NoData 空洞，掩膜不产生有价值结果。
+SAGA Wind Effect 仅处理 DEM 有效区域，DEM 自身已是天然掩膜。
+
+**变更:**
+- `run_growing_season_pipeline.py`: Step 2（掩膜）移除，Step 2–5 前移为 Step 2–4
+- `wind_direction_cal.py`: 输入从 masked/ 改回 unmasked/
+- `era5_uv_mask.py`: 保留但不再由管道调用
+
+管道现状（4 步）:
+```
+Step 0: era5_uv_preprocess.py       → 0.25° u/v/wind_dir
+Step 1: era5_uv_reproject_to_10m.py → 10m u/v unmasked
+Step 2: wind_direction_cal.py       → 10m wind_dir
+Step 3: saga_wind_effect.py         → wind_effect.tif
+Step 4: windward_leeward_divide.py  → 迎风/背风二分类
+```
+
+## 3. BigTIFF 问题 (wind_direction_cal.py)
+
+西南地区 10m Float32 栅格 > 4GB（Classic TIFF 上限），600 hPa 时触发：
+```
+TIFFAppendToStrip: Maximum TIFF file size exceeded. Use BIGTIFF=YES creation option.
+```
+
+**根因:** Step 1 使用 gdal.Warp（creationOptions=['BIGTIFF=YES']）正确；Step 2 使用
+rasterio（`out_profile = u_src.profile.copy()`）。`profile` 为数据元数据（dtype、尺寸、
+CRS、压缩），BigTIFF 是文件格式级别标志，不出现在 profile 中。`copy()` 不继承 BigTIFF。
+
+**修复:** `out_profile['bigtif'] = True`（添加于 wind_direction_cal.py）。
+
+步骤 3–4 不涉此风险：SAGA 自行处理 TIFF 创建；windward_leeward_divide.py 输出 uint8，
+远小于 4GB。

@@ -204,3 +204,5 @@ secrets.json
 .claude/
 /Assets/Ref/claude/dead.MD
 /.arts/settings.json
+.codeartsdoer/
+.codegraph/
