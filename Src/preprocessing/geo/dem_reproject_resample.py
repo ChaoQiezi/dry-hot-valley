@@ -10,6 +10,7 @@ DEM 投影转换 (WGS84 -> 自定义 Albers 等面积圆锥投影) 并重采样�
 
 输入: G:/GeoProjects/dry_hot_valley/geo_factor/DEM/xinan/elevation_30m_geo_xinan_region.tif
 输出: G:/GeoProjects/dry_hot_valley/geo_factor/DEM/xinan/elevation_10m_proj_xinan_region.tif
+      G:/GeoProjects/dry_hot_valley/geo_factor/DEM/xinan/elevation_100m_proj_xinan_region.tif
       G:/GeoProjects/dry_hot_valley/geo_factor/Slope/xinan/slope_10m_proj_xinan_region.tif
       G:/GeoProjects/dry_hot_valley/geo_factor/Aspect/xinan/aspect_10m_proj_xinan_region.tif
 
@@ -95,13 +96,39 @@ else:
     print(f'  -> {dem_10m_path}')
 
 # ================================================================
-# Step 2: 计算坡度 (gdaldem slope)
+# Step 2: DEM 下采样至 100m (10m → 100m, 供 SAGA Wind Effect 使用)
+# ================================================================
+dem_100m_path = os.path.join(out_root, 'DEM', 'xinan', 'elevation_100m_proj_xinan_region.tif')
+if os.path.exists(dem_100m_path) and not overwrite:
+    print(f'DEM 100m exists: {dem_100m_path}, skip.')
+else:
+    os.makedirs(os.path.dirname(dem_100m_path), exist_ok=True)
+    print('Step 2/4: Downsampling DEM to 100m (for SAGA Wind Effect) ...')
+    print(f'  Input:  {dem_10m_path}')
+    print(f'  Output: {dem_100m_path}')
+
+    downsample_options = gdal.WarpOptions(
+        format='GTiff',
+        xRes=100,
+        yRes=100,
+        resampleAlg=gdal.GRA_Average,
+        srcNodata=float('nan'),
+        dstNodata=float('nan'),
+        creationOptions=creation_options,
+        multithread=True,
+    )
+    gdal.Warp(dem_100m_path, dem_10m_path, options=downsample_options)
+    build_overviews(dem_100m_path)
+    print(f'  -> {dem_100m_path}')
+
+# ================================================================
+# Step 3: 计算坡度 (gdaldem slope)
 # ================================================================
 if os.path.exists(slope_10m_path) and not overwrite:
     print(f'Slope 10m exists: {slope_10m_path}, skip.')
 else:
     os.makedirs(os.path.dirname(slope_10m_path), exist_ok=True)
-    print('Step 2/3: Computing slope from 10m DEM (gdaldem) ...')
+    print('Step 3/4: Computing slope from 10m DEM (gdaldem) ...')
 
     slope_options = gdal.DEMProcessingOptions(
         format='GTiff',
@@ -120,7 +147,7 @@ if os.path.exists(aspect_10m_path) and not overwrite:
     print(f'Aspect 10m exists: {aspect_10m_path}, skip.')
 else:
     os.makedirs(os.path.dirname(aspect_10m_path), exist_ok=True)
-    print('Step 3/3: Computing aspect from 10m DEM (gdaldem) ...')
+    print('Step 4/4: Computing aspect from 10m DEM (gdaldem) ...')
 
     aspect_options = gdal.DEMProcessingOptions(
         format='GTiff',
