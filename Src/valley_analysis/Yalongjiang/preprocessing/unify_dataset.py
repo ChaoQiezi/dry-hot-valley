@@ -24,7 +24,7 @@ ndvi_dir = r'E:\GeoProjects\dry_hot_valley\NDVI\Yearly'  # NDVI_{year}.tif
 ndvi_mean_path = r'E:\GeoProjects\dry_hot_valley\NDVI\Interannual\NDVI_interannual_mean.tif'
 aspect_path = r"E:\GeoProjects\dry_hot_valley\GeoFactor\windward_leeward\windward_leeward.tif"  # 迎风坡背风坡二分类栅格
 daduhe_path = r"E:\GeoProjects\dry_hot_valley\valley_area\西南干旱河谷范围\Yalongjiang_valley.shp"  # 边界矢量
-out_dir = r'E:\GeoProjects\dry_hot_valley\Yalongjiang'
+out_dir = r'E:\GeoProjects\dry_hot_valleyalley_analysis\Yalongjiang'
 os.makedirs(out_dir, exist_ok=True)
 arcpy.env.overwriteOutput = True  # 允许覆盖输出文件
 clipping_geometry = False  # 裁剪时是否按shp进行掩膜

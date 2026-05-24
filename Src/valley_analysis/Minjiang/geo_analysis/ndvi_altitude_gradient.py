@@ -31,13 +31,13 @@ import rioxarray as rxr
 # ============================================================
 # 0. Configuration
 # ============================================================
-# ndvi_path = r"E:\GeoProjects\dry_hot_valley\Minjiang\NDVI\Interannual\NDVI_interannual_mean.tif"
-ndvi_dir = r"E:\GeoProjects\dry_hot_valley\Minjiang\NDVI\Yearly"
-dem_path = r"E:\GeoProjects\dry_hot_valley\Minjiang\geo_factor\elevation_10m_projected.tif"
-aspect_path = r"E:\GeoProjects\dry_hot_valley\Minjiang\geo_factor\windward_leeward.tif"  # 二值栅格: 1=迎风坡, 2=背风坡
-interannual_ndvi_path = r"E:\GeoProjects\dry_hot_valley\Minjiang\NDVI\Interannual\NDVI_interannual_mean.tif"
-# out_path = r'E:\GeoProjects\dry_hot_valley\Minjiang\Result\Table\altitude\NDVI_elevation_gradient.xlsx'
-out_dir = r'E:\GeoProjects\dry_hot_valley\Minjiang\Result\Table\altitude'
+# ndvi_path = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\NDVI\Interannual\NDVI_interannual_mean.tif"
+ndvi_dir = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\NDVI\Yearly"
+dem_path = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\geo_factor\elevation_10m_projected.tif"
+aspect_path = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\geo_factor\windward_leeward.tif"  # 二值栅格: 1=迎风坡, 2=背风坡
+interannual_ndvi_path = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\NDVI\Interannual\NDVI_interannual_mean.tif"
+# out_path = r'E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\Result\Table\altitude\NDVI_elevation_gradient.xlsx'
+out_dir = r'E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\Result\Table\altitude'
 
 chunk_size = {'x': 4096, 'y': 4096}
 elev_step = 50  # 高程梯度间隔(m)
@@ -182,7 +182,7 @@ if __name__ == '__main__':
     print(f'Dask dashboard: {client.dashboard_link}')
 
     # 检索
-    wildcard = r"E:\GeoProjects\dry_hot_valley\Minjiang\NDVI\Yearly\NDVI_*_region.tif"
+    wildcard = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\NDVI\Yearly\NDVI_*_region.tif"
     ndvi_paths = glob(wildcard)
 
     # 迭代处理 (逐年)

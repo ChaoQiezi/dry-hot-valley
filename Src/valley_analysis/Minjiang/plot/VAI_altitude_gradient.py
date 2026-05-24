@@ -37,8 +37,8 @@ warnings.filterwarnings('ignore')
 # ============================================================
 # 0. Configuration
 # ============================================================
-in_path = r'E:\GeoProjects\dry_hot_valley\Minjiang\Result\Table\altitude\VAI_altitude_gradient.xlsx'
-out_path = r'E:\GeoProjects\dry_hot_valley\Minjiang\Result\Chart\altitude\VAI_altitude_gradient.png'
+in_path = r'E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\Result\Table\altitude\VAI_altitude_gradient.xlsx'
+out_path = r'E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\Result\Chart\altitude\VAI_altitude_gradient.png'
 
 # ============================================================
 # 1. Read data

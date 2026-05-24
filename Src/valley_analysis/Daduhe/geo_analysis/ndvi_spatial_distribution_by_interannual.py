@@ -20,8 +20,8 @@ import rioxarray as rxr
 from qiezi import build_overviews, compute_statistics
 
 # 准备
-in_dir = r"E:\GeoProjects\dry_hot_valley\Daduhe\NDVI\Yearly"
-out_path = r'E:\GeoProjects\dry_hot_valley\Daduhe\NDVI\Interannual\NDVI_interannual_mean.tif'
+in_dir = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Daduhe\NDVI\Yearly"
+out_path = r'E:\GeoProjects\dry_hot_valley\valley_analysis\Daduhe\NDVI\Interannual\NDVI_interannual_mean.tif'
 chunk_size = 4096
 
 if __name__ == '__main__':

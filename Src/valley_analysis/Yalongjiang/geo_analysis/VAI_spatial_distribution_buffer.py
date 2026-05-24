@@ -41,12 +41,12 @@ warnings.filterwarnings("ignore")
 # ============================================================
 # 0. Configuration
 # ============================================================
-NDVI_PATH = r"E:\GeoProjects\dry_hot_valley\Yalongjiang\NDVI\Interannual\NDVI_interannual_mean_region.tif"
-DIRECTION_PATH = r"E:\GeoProjects\dry_hot_valley\Yalongjiang\geo_factor\windward_leeward_region.tif"
-DEM_PATH = r"E:\GeoProjects\dry_hot_valley\Yalongjiang\geo_factor\elevation_10m_projected_region.tif"
+NDVI_PATH = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\NDVI\Interannual\NDVI_interannual_mean_region.tif"
+DIRECTION_PATH = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\geo_factor\windward_leeward_region.tif"
+DEM_PATH = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\geo_factor\elevation_10m_projected_region.tif"
 CENTERLINE_PATH = r"E:\GeoProjects\dry_hot_valley\valley_area\river_net\centerline_final.shp"
 
-OUT_DIR = r"E:\GeoProjects\dry_hot_valley\Yalongjiang\VAI"
+OUT_DIR = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\VAI"
 OUT_VAI_PATH = os.path.join(OUT_DIR, "VAI_3km_buffer.tif")
 OUT_PVAL_PATH = os.path.join(OUT_DIR, "VAI_pvalue_3km_buffer.tif")
 OUT_WW_MEAN_PATH = os.path.join(OUT_DIR, "NDVI_windward_3km_buffer.tif")

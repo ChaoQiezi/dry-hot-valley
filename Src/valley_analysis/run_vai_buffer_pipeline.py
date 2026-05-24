@@ -40,16 +40,16 @@ step4_script = os.path.join(project_src, 'geo_analysis', 'zhao_threshold_intensi
 
 # 输出文件 (用于检查是否存在)
 windward_region_tifs = [
-    r'E:\GeoProjects\dry_hot_valley\Daduhe\geo_factor\windward_leeward_region.tif',
-    r'E:\GeoProjects\dry_hot_valley\Jinshajiang\geo_factor\windward_leeward_region.tif',
-    r'E:\GeoProjects\dry_hot_valley\Minjiang\geo_factor\windward_leeward_region.tif',
-    r'E:\GeoProjects\dry_hot_valley\Yalongjiang\geo_factor\windward_leeward_region.tif',
+    r'E:\GeoProjects\dry_hot_valley\valley_analysis\Daduhe\geo_factor\windward_leeward_region.tif',
+    r'E:\GeoProjects\dry_hot_valley\valley_analysis\Jinshajiang\geo_factor\windward_leeward_region.tif',
+    r'E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\geo_factor\windward_leeward_region.tif',
+    r'E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\geo_factor\windward_leeward_region.tif',
 ]
 buffer_vai_tifs = [
-    r'E:\GeoProjects\dry_hot_valley\Daduhe\VAI\VAI_3km_buffer.tif',
-    r'E:\GeoProjects\dry_hot_valley\Jinshajiang\VAI\VAI_3km_buffer.tif',
-    r'E:\GeoProjects\dry_hot_valley\Minjiang\VAI\VAI_3km_buffer.tif',
-    r'E:\GeoProjects\dry_hot_valley\Yalongjiang\VAI\VAI_3km_buffer.tif',
+    r'E:\GeoProjects\dry_hot_valley\valley_analysis\Daduhe\VAI\VAI_3km_buffer.tif',
+    r'E:\GeoProjects\dry_hot_valley\valley_analysis\Jinshajiang\VAI\VAI_3km_buffer.tif',
+    r'E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\VAI\VAI_3km_buffer.tif',
+    r'E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\VAI\VAI_3km_buffer.tif',
 ]
 combined_outputs = [
     r'E:\GeoProjects\dry_hot_valley\Result\Table\altitude\VAI_buffer_cells_all.csv',
@@ -114,7 +114,7 @@ def main():
     for valley, script_path in unify_scripts.items():
         # 检查跳过
         cur_out = os.path.join(
-            r'E:\GeoProjects\dry_hot_valley', valley, 'geo_factor', 'windward_leeward_region.tif'
+            r'E:\GeoProjects\dry_hot_valley\valley_analysis', valley, 'geo_factor', 'windward_leeward_region.tif'
         )
         if not force_rerun and not upstream_was_run and os.path.exists(cur_out):
             print(f'[{time.strftime("%H:%M:%S")}] {valley} windward_leeward_region.tif exists, SKIP.')

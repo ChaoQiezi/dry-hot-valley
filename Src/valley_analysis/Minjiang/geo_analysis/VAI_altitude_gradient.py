@@ -30,9 +30,9 @@ import rasterio as rio
 # ============================================================
 # 0. Configuration
 # ============================================================
-vai_path = r"E:\GeoProjects\dry_hot_valley\Minjiang\VAI\VAI_3km_region.tif"
-dem_path = r"E:\GeoProjects\dry_hot_valley\Minjiang\VAI\DEM_3km_region.tif"
-out_path = r"E:\GeoProjects\dry_hot_valley\Minjiang\Result\Table\altitude\VAI_altitude_gradient.xlsx"
+vai_path = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\VAI\VAI_3km_region.tif"
+dem_path = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\VAI\DEM_3km_region.tif"
+out_path = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\Result\Table\altitude\VAI_altitude_gradient.xlsx"
 
 elev_step = 100  # 高程梯度间隔(m)
 

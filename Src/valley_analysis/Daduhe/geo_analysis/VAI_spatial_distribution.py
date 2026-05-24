@@ -44,11 +44,11 @@ warnings.filterwarnings('ignore')
 # ============================================================
 # 0. Configuration
 # ============================================================
-ndvi_mean_path = r"E:\GeoProjects\dry_hot_valley\Daduhe\NDVI\Interannual\NDVI_interannual_mean_region.tif"
-direction_path = r"E:\GeoProjects\dry_hot_valley\Daduhe\geo_factor\windward_leeward_region.tif"
-dem_path = r"E:\GeoProjects\dry_hot_valley\Daduhe\geo_factor\elevation_10m_projected_region.tif"
+ndvi_mean_path = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Daduhe\NDVI\Interannual\NDVI_interannual_mean_region.tif"
+direction_path = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Daduhe\geo_factor\windward_leeward_region.tif"
+dem_path = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Daduhe\geo_factor\elevation_10m_projected_region.tif"
 
-out_dir = r"E:\GeoProjects\dry_hot_valley\Daduhe\VAI"
+out_dir = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Daduhe\VAI"
 out_vai_path = os.path.join(out_dir, "VAI_3km_region.tif")
 out_pval_path = os.path.join(out_dir, "VAI_pvalue_3km_region.tif")
 out_ww_mean_path = os.path.join(out_dir, "NDVI_windward_3km_region.tif")

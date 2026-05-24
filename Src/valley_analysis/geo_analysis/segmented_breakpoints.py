@@ -16,10 +16,10 @@ import warnings
 warnings.filterwarnings('ignore')
 
 VALLEYS = {
-    '岷江':   r'E:\GeoProjects\dry_hot_valley\Minjiang\Result\Table\altitude\VAI_altitude_gradient.xlsx',
-    '大渡河': r'E:\GeoProjects\dry_hot_valley\Daduhe\Result\Table\VAI_altitude_gradient.xlsx',
-    '金沙江': r'E:\GeoProjects\dry_hot_valley\Jinshajiang\Result\Table\VAI_altitude_gradient.xlsx',
-    '雅砻江': r'E:\GeoProjects\dry_hot_valley\Yalongjiang\Result\Table\VAI_altitude_gradient.xlsx',
+    '岷江':   r'E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\Result\Table\altitude\VAI_altitude_gradient.xlsx',
+    '大渡河': r'E:\GeoProjects\dry_hot_valley\valley_analysis\Daduhe\Result\Table\VAI_altitude_gradient.xlsx',
+    '金沙江': r'E:\GeoProjects\dry_hot_valley\valley_analysis\Jinshajiang\Result\Table\VAI_altitude_gradient.xlsx',
+    '雅砻江': r'E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\Result\Table\VAI_altitude_gradient.xlsx',
 }
 COLORS = {
     '岷江':   '#1B9E77',
@@ -92,10 +92,10 @@ warnings.filterwarnings('ignore')
 # Configuration
 # ============================================================
 VALLEYS = {
-    '岷江': r'E:\GeoProjects\dry_hot_valley\Minjiang\Result\Table\altitude\VAI_altitude_gradient.xlsx',
-    '大渡河': r'E:\GeoProjects\dry_hot_valley\Daduhe\Result\Table\VAI_altitude_gradient.xlsx',
-    '金沙江': r'E:\GeoProjects\dry_hot_valley\Jinshajiang\Result\Table\VAI_altitude_gradient.xlsx',
-    '雅砻江': r'E:\GeoProjects\dry_hot_valley\Yalongjiang\Result\Table\VAI_altitude_gradient.xlsx',
+    '岷江': r'E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\Result\Table\altitude\VAI_altitude_gradient.xlsx',
+    '大渡河': r'E:\GeoProjects\dry_hot_valley\valley_analysis\Daduhe\Result\Table\VAI_altitude_gradient.xlsx',
+    '金沙江': r'E:\GeoProjects\dry_hot_valley\valley_analysis\Jinshajiang\Result\Table\VAI_altitude_gradient.xlsx',
+    '雅砻江': r'E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\Result\Table\VAI_altitude_gradient.xlsx',
 }
 COLORS = {
     '岷江': '#1B9E77',

@@ -31,13 +31,13 @@ import rioxarray as rxr
 # ============================================================
 # 0. Configuration
 # ============================================================
-# ndvi_path = r"E:\GeoProjects\dry_hot_valley\Yalongjiang\NDVI\Interannual\NDVI_interannual_mean.tif"
-ndvi_dir = r"E:\GeoProjects\dry_hot_valley\Yalongjiang\NDVI\Yearly"
-dem_path = r"E:\GeoProjects\dry_hot_valley\Yalongjiang\geo_factor\elevation_10m_projected_region.tif"
-aspect_path = r"E:\GeoProjects\dry_hot_valley\Yalongjiang\geo_factor\windward_leeward_region.tif"  # 二值栅格: 1=迎风坡, 2=背风坡
-# out_path = r'E:\GeoProjects\dry_hot_valley\Yalongjiang\Result\Table\altitude\NDVI_elevation_gradient.xlsx'
-out_dir = r'E:\GeoProjects\dry_hot_valley\Yalongjiang\Result\Table\altitude'
-interannual_ndvi_path = r"E:\GeoProjects\dry_hot_valley\Yalongjiang\NDVI\Interannual\NDVI_interannual_mean.tif"
+# ndvi_path = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\NDVI\Interannual\NDVI_interannual_mean.tif"
+ndvi_dir = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\NDVI\Yearly"
+dem_path = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\geo_factor\elevation_10m_projected_region.tif"
+aspect_path = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\geo_factor\windward_leeward_region.tif"  # 二值栅格: 1=迎风坡, 2=背风坡
+# out_path = r'E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\Result\Table\altitude\NDVI_elevation_gradient.xlsx'
+out_dir = r'E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\Result\Table\altitude'
+interannual_ndvi_path = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\NDVI\Interannual\NDVI_interannual_mean.tif"
 
 chunk_size = {'x': 4096, 'y': 4096}
 elev_step = 50  # 高程梯度间隔(m)
@@ -183,7 +183,7 @@ if __name__ == '__main__':
     print(f'Dask dashboard: {client.dashboard_link}')
 
     # 检索
-    wildcard = r"E:\GeoProjects\dry_hot_valley\Yalongjiang\NDVI\Yearly\NDVI_*_region.tif"
+    wildcard = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\NDVI\Yearly\NDVI_*_region.tif"
     ndvi_paths = glob(wildcard)
 
     # 迭代处理 (逐年)
