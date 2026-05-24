@@ -47,8 +47,13 @@ if __name__ == '__main__':
     out_profile['blockysize'] = chunks
     out_profile['dtype'] = 'uint8'
     out_profile['nodata'] = 255
+    out_profile['bigtiff'] = 'YES'
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
+
+    # 删除旧文件 (避免残留损坏文件影响写入)
+    if os.path.exists(out_path):
+        os.remove(out_path)
 
     # 逐块处理
     print('Classifying windward/leeward (sequential block processing) ...')

@@ -32,11 +32,6 @@ step2_script = os.path.join(project_src, 'wind', 'wind_direction_cal.py')
 step3_script = os.path.join(project_src, 'wind', 'saga_wind_effect.py')
 step4_script = os.path.join(project_src, 'wind', 'windward_leeward_divide.py')
 
-# SAGA 相关 (用于 Step 3 的智能导出判断)
-wind_effect_tif = r'G:\GeoProjects\dry_hot_valley\wind_effect\wind_effect.tif'
-wind_effect_sgrd = r'G:\GeoProjects\dry_hot_valley\wind_effect\wind_effect.sgrd'
-saga_cmd = r'D:\Softwares\saga-9.11.3_msw\saga_cmd.exe'
-
 # 是否强制全部重跑 (False = 跳过已存在的输出)
 force_rerun = False
 # ================================================================
@@ -90,33 +85,12 @@ def get_step_outputs():
              for lev in levels],
             '10m wind direction'
         ),
-        3: ([wind_effect_tif], 'wind_effect.tif'),
+        3: ([os.path.join(base, 'wind_effect', 'wind_effect.tif')], 'wind_effect.tif'),
         4: (
             [r'E:\GeoProjects\dry_hot_valley\GeoFactor\windward_leeward\windward_leeward.tif'],
             'windward_leeward.tif'
         ),
     }
-
-
-def run_saga_export_only():
-    """仅导出已有的 wind_effect.sgrd → wind_effect.tif (跳过计算)"""
-    if not os.path.exists(wind_effect_sgrd):
-        print('  wind_effect.sgrd not found, need full run.')
-        return False
-
-    if os.path.exists(wind_effect_tif):
-        os.remove(wind_effect_tif)
-
-    print('  Exporting wind_effect.sgrd → wind_effect.tif ...')
-    cmd = [saga_cmd, 'io_gdal', '2',
-           '-GRIDS', wind_effect_sgrd,
-           '-FILE', wind_effect_tif]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        print(f'  Export failed: {result.stderr[-300:]}')
-        return False
-    print(f'  -> {wind_effect_tif}')
-    return True
 
 
 def main():
@@ -143,18 +117,6 @@ def main():
             if check_outputs_exist(files, label):
                 print(f'[{time.strftime("%H:%M:%S")}] {description} -- outputs exist, SKIP.')
                 continue
-
-        # Step 3 特殊处理: wind_effect.sdat 已最新 → 仅导出
-        if step_num == 3 and not force_rerun and not upstream_was_run:
-            wind_dir_sdat = os.path.join(os.path.dirname(wind_effect_sgrd), 'wind_dir.sdat')
-            wind_effect_sdat = os.path.join(os.path.dirname(wind_effect_sgrd), 'wind_effect.sdat')
-            if os.path.exists(wind_effect_sdat) and os.path.exists(wind_dir_sdat):
-                if os.path.getmtime(wind_effect_sdat) > os.path.getmtime(wind_dir_sdat):
-                    print(f'\n[{time.strftime("%H:%M:%S")}] wind_effect.sdat is newer → export only')
-                    if run_saga_export_only():
-                        print(f'[{time.strftime("%H:%M:%S")}] Step 3 (export only) -- OK')
-                        continue
-                    print('  Export failed, falling back to full SAGA run.')
 
         # 执行
         if not run_python_script(script_path, description):
