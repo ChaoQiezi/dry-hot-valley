@@ -43,11 +43,11 @@ warnings.filterwarnings("ignore")
 # ============================================================
 # 0. Configuration
 # ============================================================
-BASE = r"E:\GeoProjects\dry_hot_valley"
-CENTERLINE_PATH = os.path.join(BASE, r"valley_area\river_net\centerline_final.shp")
+BASE = r"E:\GeoProjects\dry_hot_valley\valley_analysis"
+CENTERLINE_PATH = os.path.join(BASE, r"..\valley_area\river_net\centerline_final.shp")  # 已废弃, 各河谷使用独立中心线
 
-OUT_TABLE_DIR = os.path.join(BASE, r"Result\Table\altitude")
-OUT_CHART_DIR = os.path.join(BASE, r"Result\Chart\altitude")
+OUT_TABLE_DIR = os.path.join(BASE, r"..\Result\Table\altitude")
+OUT_CHART_DIR = os.path.join(BASE, r"..\Result\Chart\altitude")
 os.makedirs(OUT_TABLE_DIR, exist_ok=True)
 os.makedirs(OUT_CHART_DIR, exist_ok=True)
 
@@ -79,6 +79,7 @@ VALLEY_CONFIGS = [
     {
         "label": "岷江",
         "name_filter": "岷江干旱河谷",
+        "centerline_path": os.path.join(BASE, r"Minjiang\geo_factor\Minjiang_centerline.shp"),
         "vai_path": os.path.join(BASE, r"Minjiang\VAI\VAI_3km_buffer.tif"),
         "dem3_path": os.path.join(BASE, r"Minjiang\VAI\DEM_3km_buffer.tif"),
         "frac_path": os.path.join(BASE, r"Minjiang\VAI\valley_fraction_3km_buffer.tif"),
@@ -273,9 +274,10 @@ def load_all_valleys(configs):
     for cfg in configs:
         label = cfg["label"]
         print(f"  Loading {label} ...")
+        centerline_path = cfg.get("centerline_path", CENTERLINE_PATH)
         centerline, parts = load_centerline(
             cfg["name_filter"], cfg["vai_path"], cfg["dem10_path"],
-            CENTERLINE_PATH, label,
+            centerline_path, label,
         )
         grid = load_buffer_grid(
             cfg["vai_path"], cfg["dem3_path"], cfg["frac_path"], cfg["pval_path"],

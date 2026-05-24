@@ -31,8 +31,8 @@ warnings.filterwarnings("ignore")
 # ============================================================
 # 0. Configuration
 # ============================================================
-BASE = r"E:\GeoProjects\dry_hot_valley"
-CENTERLINE_PATH = os.path.join(BASE, r"valley_area\river_net\centerline_final.shp")
+BASE = r"E:\GeoProjects\dry_hot_valley\valley_analysis"
+CENTERLINE_PATH = os.path.join(BASE, r"..\valley_area\river_net\centerline_final.shp")  # 已废弃, 各河谷使用独立中心线
 
 GRID_SIZE_M = 3000
 PIXEL_SIZE_M = 10
@@ -67,6 +67,7 @@ VALLEY_CONFIGS = [
     {
         "name_filter": "岷江干旱河谷",
         "label": "岷江",
+        "centerline_path": os.path.join(BASE, r"Minjiang\geo_factor\Minjiang_centerline.shp"),
         "ndvi_path": os.path.join(BASE, r"Minjiang\NDVI\Interannual\NDVI_interannual_mean_region.tif"),
         "direction_path": os.path.join(BASE, r"Minjiang\geo_factor\windward_leeward_region.tif"),
         "dem_path": os.path.join(BASE, r"Minjiang\geo_factor\elevation_10m_projected_region.tif"),
@@ -168,8 +169,9 @@ def process_valley(cfg):
     with rio.open(direction_path, "r") as src:
         dir_nodata = src.nodata
 
-    print(f"  Centerline: {CENTERLINE_PATH}, filter={name_filter!r}")
-    lines = load_centerline_lines(CENTERLINE_PATH, name_filter, ref_crs)
+    centerline_path = cfg.get("centerline_path", CENTERLINE_PATH)
+    print(f"  Centerline: {centerline_path}, filter={name_filter!r}")
+    lines = load_centerline_lines(centerline_path, name_filter, ref_crs)
     print(f"  Centerline parts: {len(lines)}")
     print(f"  Building {BUFFER_RADIUS_M / 1000:.1f} km buffer mask ...")
     buffer_mask = build_buffer_mask_10m(
