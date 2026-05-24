@@ -286,6 +286,7 @@ Assets/Ref/rtc_product_guide_v1.2.pdf; 因此实际上后续研究, 目前(2026/
 windward_leeward_divide.py bug 修复:
   - predictor=3→2 (uint8 需整数 predictor)
   - block → 4096×4096 (16 倍数)
+  - 写入前 os.remove(out_path) (残留损坏文件导致 TIFFReadDirectory 报错, 第三次崩溃)
 
 生长季 5-9 月风场链重跑 (run_growing_season_pipeline.py):
   Step 0→5: ERA5 nc → 0.25° u/v → 10m → DEM mask → wind_dir → 
@@ -333,8 +334,11 @@ run_vai_buffer_pipeline.py 创建 (Step 1→3, Step 4 注释可选)
 | VAI管道 | Src/valley_analysis/run_vai_buffer_pipeline.py |
 | buffer VAI | Src/valley_analysis/geo_analysis/VAI_spatial_distribution_buffer.py |
 | 阈值+森林图 | Src/valley_analysis/geo_analysis/VAI_altitude_gradient_buffer.py |
-| ERA5预处理 | Src/preprocessing/era5/era5_u_v_preprocess.py |
-| 迎背风坡 | Src/preprocessing/windward_leeward_divide.py |
+| ERA5 Step 0 | Src/preprocessing/era5/era5_uv_preprocess.py |
+| ERA5 Step 1 | Src/preprocessing/era5/era5_uv_reproject_to_10m.py |
+| 风向计算 | Src/preprocessing/wind/wind_direction_cal.py |
+| SAGA Wind Effect | Src/preprocessing/wind/saga_wind_effect.py |
+| 迎背风坡 | Src/preprocessing/wind/windward_leeward_divide.py |
 | 组会纪要 | Assets/Ref/group_meeting/2026-05-17_组会纪要.md |
 | 进展文档 | Assets/Ref/claude/PROGRESS_2026-05-18.md |
 | 废弃代码 | History/ |
@@ -460,18 +464,279 @@ Step 3: saga_wind_effect.py         → wind_effect.tif
 Step 4: windward_leeward_divide.py  → 迎风/背风二分类
 ```
 
-## 3. BigTIFF 问题 (wind_direction_cal.py)
+## 3. BigTIFF 问题
 
-西南地区 10m Float32 栅格 > 4GB（Classic TIFF 上限），600 hPa 时触发：
+西南地区 10m 栅格超 Classic TIFF 4GB 上限。gdal.Warp 通过 creationOptions 传入
+BIGTIFF=YES 正确处理；rasterio 的 profile.copy() 不继承 BigTIFF 标志，需显式设置
+`out_profile['bigtiff'] = 'YES'`。
+
+- wind_direction_cal.py: BIGTIFF 已设置 ✓
+- windward_leeward_divide.py: BIGTIFF 缺失 ✗（05-22 补上）
+
+注意: `BIGTIFF` 是两个 F — TIFF 本身就是 Tagged Image File Format。
+BIGTIFF 拼写统一应用于管道内所有 rasterio 写操作: wind_direction_cal.py、
+windward_leeward_divide.py、以及非管道脚本 ndvi_preprocess.py。
+
+
+# 2026/05/21 BigTIFF 拼写修正 + ndvi_preprocess.py 全面翻修
+
+## 1. BigTIFF 拼写: `bigtif` → `bigtiff` (双 F)
+
+05-20 在 `wind_direction_cal.py` 中写的 `out_profile['bigtif'] = True` 实际上是单 F。
+GDAL 的 creation option 是 `BIGTIFF`, 单 F 的 `BIGTIF` 不是有效选项名, 等同于没设。
+
+**修正:** 全项目 rasterio profile 统一为小写双 F: `'bigtiff': 'yes'`
+
+| 文件 | 旧写法 | 新写法 |
+|------|--------|--------|
+| wind_direction_cal.py | `'bigtif': True` ✗ | `'bigtiff': 'yes'` ✓ |
+| ndvi_preprocess.py | `'bigtiff': 'yes'` (原版) → `'bigtif': True` ✗ (误修改) | `'bigtiff': 'yes'` ✓ |
+| windward_leeward_divide.py | (缺失) ✗ | `'bigtiff': 'yes'` ✓ |
+| 4× ndvi_spatial_distribution_by_interannual.py | `"bigtiff": "yes"` ✓ | 无需修改 |
+
+注: gdal.Warp 的 creationOptions 字符串 `'BIGTIFF=YES'` (era5_uv_reproject_to_10m.py 等)
+是另一套 API, 不受此影响。
+
+## 2. ndvi_preprocess.py 全面翻修
+
+### 2.1 路径和配置修正
+
+| 变更项 | 旧值 | 新值 |
+|--------|------|------|
+| DEM ref_path | `GLO-30\elevation_10m_projected.tif` (UTM 川西) | `xinan\elevation_10m_proj_xinan_region.tif` (Albers 西南) |
+| 输出 out_dir | `G:\...\NDVI\Yearly\Temp\` | `E:\...\NDVI\Yearly\` (与下游 unify_dataset 等衔接) |
+| 死代码 | `ref_meta`, `ref_srs` (自定义 Albers 无 EPSG) | 已删除 |
+
+### 2.2 处理流程重写: 解决 rioxarray 竞态
+
+原始流程存在两处 rioxarray `to_raster(windowed=True)` 调用:
+- `warp_by_tiff` → `img_scale` (qiezi 包内, 比例缩放)
+- `remove_invalid_values` (NDVI<0.1 过滤)
+
+两处都在 Windows 上触发同一 bug:
+
+> rioxarray 的 `RasterioWriter` 在 `windowed=True` 时每写一个 chunk 就用
+> `"r+"` 模式重开目标文件。西南地区 10m 栅格 ~15 万×15 万像素, chunk 数千个,
+> 数千次 `open→write→close`。Windows 文件系统在高频重开同一文件时偶发锁未释放,
+> 报 `file used by other process`。
+
+**新流程 (纯 rasterio 逐块, 无 rioxarray):**
+
 ```
-TIFFAppendToStrip: Maximum TIFF file size exceeded. Use BIGTIFF=YES creation option.
+gdal.BuildVRT (镶嵌)
+  → gdal.Warp (重投影+重采样, Int16 无缩放)
+  → remove_invalid_values (缩放+过滤合一, 逐块 rasterio):
+      src.read → block.astype(Float32) * 0.0001 → where(>0.1) → dst.write
+  → build_overviews + compute_statistics
 ```
 
-**根因:** Step 1 使用 gdal.Warp（creationOptions=['BIGTIFF=YES']）正确；Step 2 使用
-rasterio（`out_profile = u_src.profile.copy()`）。`profile` 为数据元数据（dtype、尺寸、
-CRS、压缩），BigTIFF 是文件格式级别标志，不出现在 profile 中。`copy()` 不继承 BigTIFF。
+关键变化:
+- 移除 `warp_by_tiff` 的 `scale_factor` 参数 → 绕过 `img_scale` 的 rioxarray
+- `remove_invalid_values` 改为纯 rasterio 逐块读写 (同 `wind_direction_cal.py` 模式)
+  — 源文件打开一次, 目标文件打开一次 (`'w'` 模式), 遍历 block, 写完关闭
+- 缩放 (×0.0001) 与过滤 (≤0.1→NaN) 合并为一次 pass, 节省一次全栅格读写
+- 移除依赖: rioxarray, dask, ProgressBar, SerializableLock, Lock
 
-**修复:** `out_profile['bigtif'] = True`（添加于 wind_direction_cal.py）。
+### 2.3 残留防护
 
-步骤 3–4 不涉此风险：SAGA 自行处理 TIFF 创建；windward_leeward_divide.py 输出 uint8，
-远小于 4GB。
+`remove_invalid_values` 写入前先 `os.remove(temp_path)` 清理上次崩溃可能遗留的 `_tmp_NDVI_{year}.tif`,
+用 temp→rename 模式原地替换源文件。
+
+### 2.4 其他
+
+- 输出文件名统一为 `NDVI_{year}.tif` (去除了旧版 `_valid` 后缀)
+- 用户侧新增 `force_rerun` flag
+
+## 3. wind_direction_cal.py Wind Direction 计算
+
+修复后重跑: 500hPa 成功, 600/700/800hPa 因 BigTIFF 单 F bug 失败。
+修正 `bigtiff` 拼写后待重跑。
+
+## 现状
+
+| 步骤 | 状态 |
+|------|------|
+| DEM 预处理 (解压→拼接→投影+降采样) | ✅ 完成 |
+| ERA5 风场 Step 0–1 (0.25° + 10m u/v) | ✅ 完成 (05-20) |
+| ERA5 风场 Step 2 (wind_dir 10m) | ⏳ BigTIFF 已修正, 待重跑 |
+| ERA5 风场 Step 3 (SAGA Wind Effect 100m) | ✅ 完成 (05-22) |
+| ERA5 风场 Step 4 (迎/背风二分类) | ✅ 完成 (05-22) |
+| NDVI 预处理 (ndvi_preprocess.py) | ⏳ 代码修完, 2019 年待重跑 |
+| NDVI 下载 (GEE) | ⏳ 2019 完成, 2020–2025 下载中 |
+| VAI Buffer 分析 | 依赖 windward_leeward + NDVI 完成 |
+
+
+# 2026/05/22 SAGA Wind Effect 100m 降采样
+
+西南地区 10m DEM ~206 亿像素, SAGA Wind Effect 向系统申请 85 GB 连续内存,
+指针崩溃 (0xC0000005)。48 GB 物理 RAM + 换页不足以满足此需求, 且即使可行,
+10m 逐像素射线追踪预计耗时数周。
+
+## 方案: 100m 降采样 + 回升
+
+ERA5 风向为 0.25° (~25 km), 100m DEM 已为 250 倍过采样, 不损失信息量。
+
+**dem_reproject_resample.py** — 新增 Step 2: 10m→100m 降采样 (GRA_Average),
+输出 `elevation_100m_proj_xinan_region.tif`。
+
+**saga_wind_effect.py** — 6 步重写:
+```
+Step 0: 读取 100m DEM / 10m DEM 参考参数 (width, height, outputBounds, dstSRS)
+Step 1: wind_dir 10m → 100m 降采样 (与 100m DEM 严格对齐)
+Step 2: 导入 DEM (100m) → SAGA
+Step 3: 导入 wind_dir (100m) → SAGA
+Step 4: Wind Effect 计算 (100m, ~30 分钟)
+Step 5: 导出 100m GeoTIFF
+Step 6: 回升 100m → 10m (outputBounds + width + height, 与 10m DEM 像素对齐)
+```
+
+## 空间对齐模式统一
+
+所有 gdal.Warp 调用统一为模式: 先读取参考栅格的 width/height/bounds/SRS,
+再传入 WarpOptions。era5_uv_reproject_to_10m.py 为此模式的原始模板。
+
+**run_growing_season_pipeline.py** — 移除 SAGA "智能导出"快捷方式 (仅导出 .sgrd→.tif,
+跳过回升步骤, 不再适用)。
+
+## BigTIFF: windward_leeward_divide.py
+
+uint8 西南地区 ~22 GB 未压缩, 写入时超 Classic TIFF 上限。
+`out_profile['bigtiff'] = 'yes'` + 写入前 `os.remove(out_path)` 清除上次残留。
+
+管道结束后 windward_leeward.tif 成功生成, 全链条跑通。
+
+
+# 2026/05/22 河网提取
+
+由于研究区域扩大为中国西南地区，因此河网提取的处理需要重新进行.
+
+基本步骤包括(均在ArcGIS Pro完成):
+
+    - 填洼
+    - 计算流向
+    - 计算累积流量
+    - 基于流量阈值截断, 提取河网
+    - 河网分级
+    - 栅格河网矢量化
+
+1. 旧逻辑(存在瑕疵)是进行河网提取后, 直接栅格河网矢量化, 同时裁剪只获取干热河谷(范等的数据)内的河网
+2. 新逻辑是按照上述步骤依次进行, 同时阈值设置为300000, 即提取流量大于等于300000的河网
+
+
+# 2026/05/23 磁盘文件布局整顿与代码路径统一
+
+## 1. 背景
+
+E盘 (SSD, 1TB) 速度快但空间有限; G盘 (HDD, 2TB) 大但慢。
+两盘文件重叠混乱, 旧川西 UTM 文件与西南 Albers 文件混杂。
+
+## 2. 存储策略
+
+| 盘 | 角色 | 存放内容 |
+|----|------|---------|
+| E (SSD) | 分析工作盘 | 小文件、热数据: NDVI 年数据、windward_leeward、VAI 结果、河谷分析 |
+| G (HDD) | 原始数据盘 | 大块头: DEM/Slope/Aspect、ERA5 u/v、wind_dir、wind_effect |
+| G:\..._old | 历史归档 | 旧 UTM 川西时代所有文件, 保持原始目录结构 |
+
+## 3. G 盘清理 (T1–T5)
+
+删除废弃文件, 旧 NDVI Yearly 迁至 old:
+
+| 操作 | 路径 | 大小 |
+|------|------|------|
+| 删除 | `NDVI\MyTemp\temp\` (GEE 下载碎片) | ~50 GB |
+| 删除 | `NDVI\Yearly\Temp\` (中间产物) | ~60 GB |
+| 删除 | `u_v\10m\masked\` (废弃掩膜步骤) | ~7 GB |
+| 迁移→old | `NDVI\Yearly\NDVI_2019~2025.tif` (旧 UTM) | ~147 GB |
+| 创建 | `G:\GeoProjects\dry_hot_valley_old\` | — |
+
+## 4. E 盘旧文件迁移至 old (T6–T18)
+
+以 2026-05-16 (西南扩展日期) 为分界线, 所有旧文件保持目录结构迁至 old:
+
+| 类别 | 内容 | 大小 |
+|------|------|------|
+| DEM | `GeoFactor\DEM\elevation_10m_projected*` (旧UTM DEM + valley裁剪) | ~43 GB |
+| NDVI | `NDVI\Interannual\NDVI_interannual_mean.tif` (旧UTM) | ~11 GB |
+| 表格 | `Output\Table\*` (旧分析产出) | <1 MB |
+| 气候 | `ERA5\t2m\*` + `ERA5\tp\*` (旧川西范围) | ~25 MB |
+| 河谷 | `valley_area\valley_chuanxi\*` (旧全川西) | ~150 MB |
+| 分析 | `Chuanxi\*` (旧全川西分析) | <1 MB |
+| GAI | 4 河谷 `GAI\` 目录 | <1 MB |
+| DEM | 4 河谷 `geo_factor\elevation_10m_projected_region*` (旧UTM裁剪) | ~13 GB |
+| NDVI | 4 河谷 `NDVI\Yearly\NDVI_*_region*` (旧UTM) | ~12 GB |
+| 结果 | 4 河谷 `Result\*` (旧图表表格) | <100 MB |
+| 其他 | `VAI\*_region/*_strict`, `GAI\`, `Slope\`, `landcover\`, `Slopeunits\`, `MXD\` 等 | ~36 GB |
+
+**E 盘效果**: 827 GB → 558 GB, 空闲 104 GB → 373 GB (+269 GB)
+
+## 5. 河谷目录归入 valley_analysis (T20)
+
+4 河谷从 E 盘根目录迁入 `valley_analysis\`:
+
+```
+E:\...\dry_hot_valley\                    E:\...\dry_hot_valley\
+├── Daduhe\                               ├── valley_analysis\
+├── Jinshajiang\                   →      │   ├── Daduhe\
+├── Minjiang\                             │   ├── Jinshajiang\
+└── Yalongjiang\                          │   ├── Minjiang\
+                                          │   └── Yalongjiang\
+```
+
+## 6. 代码路径批量更新 (T21)
+
+30 个脚本路径从 `E:\...\{valley}\` 更新为 `E:\...\valley_analysis\{valley}\`:
+
+受影响文件:
+- `valley_analysis\run_vai_buffer_pipeline.py` (动态路径 + 硬编码路径)
+- 4× `{valley}\preprocessing\unify_dataset.py` (out_dir)
+- 4× `{valley}\geo_analysis\ndvi_altitude_gradient.py`
+- 4× `{valley}\geo_analysis\ndvi_spatial_distribution_by_interannual.py`
+- 4× `{valley}\geo_analysis\VAI_altitude_gradient.py`
+- 4× `{valley}\geo_analysis\VAI_spatial_distribution.py`
+- 4× `{valley}\geo_analysis\VAI_spatial_distribution_buffer.py`
+- 4× `{valley}\plot\VAI_altitude_gradient.py`
+- `plot\VAI_combined_altitude_gradient.py`
+- `valley_analysis\geo_analysis\duplication.py`
+- `valley_analysis\geo_analysis\intensity_comparison.py`
+- `valley_analysis\geo_analysis\inverse_pt.py`
+- `valley_analysis\geo_analysis\methods_forest_plot.py`
+- `valley_analysis\geo_analysis\segmented_breakpoints.py`
+
+## 7. 最终磁盘布局
+
+```
+E:\GeoProjects\dry_hot_valley\          ← SSD 分析工作盘 (558 GB)
+├── NDVI\Yearly\                         NDVI_2019+2020 (Albers Float32)
+├── GeoFactor\windward_leeward\          windward_leeward.tif
+├── river_net\                           西南河网
+├── valley_area\Xinan\                   西南边界
+├── VAI\                                 全区域 VAI_3km
+├── Result\                              buffer 分析产出
+├── valley_analysis\                     4 河谷分析
+│   ├── Daduhe\    geo_factor\ + VAI\
+│   ├── Jinshajiang\
+│   ├── Minjiang\
+│   └── Yalongjiang\
+├── ERA5\                                (空, 脚本写入目标)
+└── Output\                              (空, 脚本写入目标)
+
+G:\GeoProjects\dry_hot_valley\          ← HDD 原始数据盘 (385 GB)
+├── geo_factor\DEM | Slope | Aspect\     西南 DEM (含 GLO-30 原始)
+├── u_v\10m\unmasked\                    ERA5 u/v 4 层
+├── wind_direction\10m\                  wind_dir 4 层
+├── wind_effect\                         SAGA Wind Effect
+├── windward_leeward\                    镜像备份
+├── landcover\                           MODIS
+└── region\                              Chuanxi.shp
+
+G:\GeoProjects\dry_hot_valley_old\      ← 历史归档 (~500 GB)
+    原始目录结构完整保留
+```
+
+## 8. 已知遗留
+
+- `geo_analysis\` 和 `plot\` 根目录旧脚本 (ndvi_mean_total.py, ndvi_altitude_analysis.py 等) 仍引用已迁至 old 的路径
+  → 这些是旧川西 UTM 脚本, 不在当前 valley_analysis 管道中
+- 代码路径问题 7 已解决, 预处理代码指向 G 盘路径正确 (原始数据在 G 盘)
+- windward_leeward.tif 左右边界异常 (05/23 记录) 待排查
