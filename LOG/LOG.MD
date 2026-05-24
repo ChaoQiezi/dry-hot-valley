@@ -740,3 +740,23 @@ G:\GeoProjects\dry_hot_valley_old\      ← 历史归档 (~500 GB)
   → 这些是旧川西 UTM 脚本, 不在当前 valley_analysis 管道中
 - 代码路径问题 7 已解决, 预处理代码指向 G 盘路径正确 (原始数据在 G 盘)
 - windward_leeward.tif 左右边界异常 (05/23 记录) 待排查
+
+
+# 2026/05/24 平均抵消效应单河谷初步试验 (岷江)
+
+- 针对 2026/05/17 组会 A1, 新增方法试验脚本:
+  `Src/valley_analysis/geo_analysis/VAI_height_band_trial.py`
+- 试验定义: 保持 `4 km` 河道 buffer 与 `3 km` 网格, 在每个网格内部按逐像元
+  相对河床高程分别计算累计高度帽 VAI (`0-200/300/400/500/1000 m`) 和互斥高度带 VAI.
+- 输入范围: 使用已完整且空间对齐的岷江历史输入; 河道临时采用当前 `river_net.shp`
+  在岷江 polygon 内的 5 条交线段. 因中心线尚待人工核对, 本轮仅为方法验证.
+- 初步结果:
+  - 配对比较下, `0-300/400/500 m` 相对于全高度聚合的 `|VAI|` 中位增量分别为
+    `+3.05/+2.20/+1.48` 个百分点, bootstrap 95% CI 均大于 0.
+  - 互斥高度带 VAI 中位数从 `0-200 m` 的 `11.88%` 降至 `1000-1500 m`
+    的 `0.64%`, 但 `1500-2000 m` 仍为正值.
+  - 当前证据支持“高处弱信号稀释近河强信号”, 尚不支持在岷江表述为“正负符号抵消”.
+- 工程阻塞修正: 现行跨河谷 buffer 核心脚本仍引用迁移前路径且引用已缺失的
+  `centerline_final.shp`; 四个 `unify_dataset.py` 的迁移路径含控制字符, 均需在正式重跑前修复.
+- 详细记录: `Assets/Ref/codex/PROGRESS_ANALYSIS_2026-05-24_HEIGHT_BAND_TRIAL.md`
+- 临时输出: `E:\MyTEMP\dry_hot_valley\height_band_trial\minjiang\`
