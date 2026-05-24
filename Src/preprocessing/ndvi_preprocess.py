@@ -61,8 +61,8 @@ out_dir = r'E:\GeoProjects\dry_hot_valley\NDVI\Yearly'
 ref_path = r"G:\GeoProjects\dry_hot_valley\geo_factor\DEM\xinan\elevation_10m_proj_xinan_region.tif"
 out_res = 10  # 米/m
 start_year = 2019
-end_year = 2019
-force_rerun = True  # True: 强制重跑
+end_year = 2023
+force_rerun = False  # True: 强制重跑
 
 if __name__ == '__main__':
     cluster = LocalCluster(n_workers=4, threads_per_worker=4, memory_limit='20GB')
@@ -96,3 +96,5 @@ if __name__ == '__main__':
         os.remove(cur_mosaic_path)
 
         print(f'Year {year} done')
+
+    client.close()
