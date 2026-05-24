@@ -32,4 +32,4 @@ for cur_year in year_range:
     cur_file_prefix = '{}_'.format(cur_year)
     download_era5(era5_name, product_type, var_names, cur_start_date, cur_end_date, out_dir, area_extent=area_extent,
                   split_month=False, split_var=False, download_format='zip',
-                  file_prefix=cur_file_prefix, time=["00:00"])
+                  file_prefix=cur_file_prefix, time=["00:00"], force_download=True)
