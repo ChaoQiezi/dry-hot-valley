@@ -52,12 +52,22 @@ def run_python_script(script_path, description):
     return True
 
 
-def check_outputs_exist(file_patterns, description):
-    """检查一组输出文件是否都存在"""
+def check_outputs_exist(file_patterns, description, dependencies=None):
+    """检查一组输出文件是否都存在且不旧于依赖文件"""
     missing = [f for f in file_patterns if not os.path.exists(f)]
     if missing:
         print(f'  [{description}] MISSING: {len(missing)} files, e.g. {os.path.basename(missing[0])}')
         return False
+
+    if dependencies:
+        existing_dependencies = [f for f in dependencies if os.path.exists(f)]
+        if existing_dependencies:
+            newest_dependency_time = max(os.path.getmtime(f) for f in existing_dependencies)
+            stale = [f for f in file_patterns if os.path.getmtime(f) < newest_dependency_time]
+            if stale:
+                print(f'  [{description}] STALE: {len(stale)} files, e.g. {os.path.basename(stale[0])}')
+                return False
+
     print(f'  [{description}] All {len(file_patterns)} files present.')
     return True
 
@@ -67,7 +77,7 @@ def get_step_outputs():
     base = r'G:\GeoProjects\dry_hot_valley'
     levels = [500, 600, 700, 800]
 
-    return {
+    outputs = {
         0: (
             [os.path.join(base, 'u_v', '0.25deg', f'{var}_{lev}hPa_0.25deg.tif')
              for var in ['u', 'v'] for lev in levels] +
@@ -91,6 +101,17 @@ def get_step_outputs():
             'windward_leeward.tif'
         ),
     }
+    dependencies = {
+        0: [step0_script],
+        1: [step1_script] + outputs[0][0],
+        2: [step2_script] + outputs[1][0],
+        3: [step3_script] + outputs[2][0],
+        4: [step4_script] + outputs[3][0],
+    }
+    return {
+        step_num: (files, label, dependencies[step_num])
+        for step_num, (files, label) in outputs.items()
+    }
 
 
 def main():
@@ -110,11 +131,11 @@ def main():
     upstream_was_run = False  # 链式触发: 上游重跑则下游必须重跑
 
     for step_num, script_path, description in steps:
-        files, label = steps_outputs[step_num]
+        files, label, dependencies = steps_outputs[step_num]
 
         # 检查是否跳过 (上游重跑过则下游不能跳过)
         if not force_rerun and not upstream_was_run:
-            if check_outputs_exist(files, label):
+            if check_outputs_exist(files, label, dependencies):
                 print(f'[{time.strftime("%H:%M:%S")}] {description} -- outputs exist, SKIP.')
                 continue
 
