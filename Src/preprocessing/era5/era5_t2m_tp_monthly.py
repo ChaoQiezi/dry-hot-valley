@@ -23,12 +23,18 @@ ERA5-Land数据说明:
 """
 
 import os
+import sys
 from glob import glob
 import netCDF4 as nc
 import numpy as np
 
 from qiezi import write_tiff, extract_nodata_value
 from qiezi.common import zip2nc
+
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+from utils import geotransform_from_center_coords
 
 
 # 准备
@@ -58,7 +64,7 @@ for cur_zip_path in zip_paths:
     print(f'Unzipped: {out_nc_name}')
 
 # 逐年提取月均t2m和tp
-geo_transform = None  # 地理变换参数, (lon_min, lon_res, 0, lat_max, 0, -lat_res)
+geo_transform = None  # 地理变换参数, 基于ERA5像元中心坐标换算到左上角
 for cur_year in range(start_year, end_year + 1):
     # 获取当前年份的nc文件路径
     nc_wildcard = os.path.join(out_nc_dir, f'{cur_year}*.nc')
@@ -78,10 +84,7 @@ for cur_year in range(start_year, end_year + 1):
         if geo_transform is None:
             lon = ds.variables['longitude'][:]
             lat = ds.variables['latitude'][:]
-            lon_res = float(lon[1] - lon[0])
-            lat_res = float(lat[0] - lat[1])  # lat递减, lat_res为正值
-            lon_min, lat_max = float(lon.min()), float(lat.max())
-            geo_transform = (lon_min, lon_res, 0, lat_max, 0, -lat_res)  # gdal标准
+            geo_transform = geotransform_from_center_coords(lon, lat)
 
     # 单位转换
     t2m_cur = t2m_cur - 273.15  # K -> °C

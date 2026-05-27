@@ -20,6 +20,51 @@ import Config
 from qiezi import read_sinu_info, read_h4_var, write_tiff
 
 
+def geotransform_from_center_coords(lon, lat):
+    """
+    根据 ERA5 NetCDF 的像元中心坐标构建 GDAL GeoTransform.
+
+    GDAL GeoTransform 需要左上角像元的左上角坐标, 不能直接使用 ERA5
+    longitude/latitude 的最小/最大值, 因为这些坐标表示像元中心.
+    """
+
+    lon = np.asarray(lon, dtype=float)
+    lat = np.asarray(lat, dtype=float)
+    if lon.ndim != 1 or lat.ndim != 1 or lon.size < 2 or lat.size < 2:
+        raise ValueError('lon/lat must be 1D coordinate arrays with at least two values.')
+
+    lon_step = _regular_step(lon, 'longitude')
+    lat_step = _regular_step(lat, 'latitude')
+    if lon_step <= 0:
+        raise ValueError('longitude must be ascending; flip data before writing if it is descending.')
+    if lat_step >= 0:
+        raise ValueError('latitude must be descending for north-up raster output.')
+
+    lon_res = lon_step
+    lat_res = abs(lat_step)
+    return (
+        float(lon[0] - lon_res / 2),
+        float(lon_res),
+        0,
+        float(lat[0] + lat_res / 2),
+        0,
+        float(-lat_res),
+    )
+
+
+def _regular_step(coords, name):
+    diffs = np.diff(coords)
+    if not np.all(np.isfinite(diffs)):
+        raise ValueError(f'{name} contains invalid coordinate values.')
+    if np.any(diffs == 0):
+        raise ValueError(f'{name} contains duplicate coordinate values.')
+
+    step = float(np.median(diffs))
+    if not np.allclose(diffs, step, rtol=0, atol=1e-8):
+        raise ValueError(f'{name} coordinates are not regularly spaced.')
+    return step
+
+
 def cloud_mask_by_scl(image: ee.Image):
     """
     基于SCL(Scene Classification Layer)波段进行像素级云掩膜.

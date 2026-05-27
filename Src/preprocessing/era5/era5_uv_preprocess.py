@@ -19,6 +19,7 @@ v_weighted = sum(v_i * V_i) / sum(V_i), V_i = sqrt(u_i^2 + v_i^2) = 风速
 """
 
 import os
+import sys
 import rasterio
 from rasterio.plot import show
 from glob import glob
@@ -30,6 +31,11 @@ import zipfile  # 解压zip文件
 from qiezi import write_tiff
 from qiezi.stats import wind_direction_cal
 from qiezi.common import zip2nc
+
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+from utils import geotransform_from_center_coords
 
 
 # 准备
@@ -58,7 +64,7 @@ for cur_zip_path in zip_paths:
 u_numerator_sum = None  # u方向的分子加权和, shape=(pressure_level, rows, cols)
 v_numerator_sum = None  # v方向的分子加权和, shape=(pressure_level, rows, cols)
 wind_speed_denominator_sum = None  # 风速分母和, shape=(pressure_level, rows, cols)
-geo_transform = None  # 地理变换参数, (lon_min, lon_res, 0, lat_max, 0, -lat_res)
+geo_transform = None  # 地理变换参数, 基于ERA5像元中心坐标换算到左上角
 lon = None  # 经度
 lat = None  # 纬度
 pressure_levels = None  # 压力层级, shape=(pressure_level,)
@@ -81,10 +87,7 @@ for cur_year in range(start_year, end_year+1):
         if geo_transform is None:
             lon = ds.variables['longitude'][:]
             lat = ds.variables['latitude'][:]
-            lon_res = lon[1] - lon[0]
-            lat_res = lat[0] - lat[1]
-            lon_min, lat_max = lon.min(), lat.max()
-            geo_transform = (lon_min, lon_res, 0, lat_max, 0, -lat_res)  # gdal标准
+            geo_transform = geotransform_from_center_coords(lon, lat)
             
             pressure_levels = ds.variables['pressure_level'][:]
             pressure_levels = [f'{_p:.0f}' for _p in pressure_levels]

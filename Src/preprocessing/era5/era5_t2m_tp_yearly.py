@@ -20,12 +20,17 @@ This script is used to 从ERA5-Land的nc文件中计算年均t2m和年总tp, 输
 """
 
 import os
+import sys
 from glob import glob
 import netCDF4 as nc
 import numpy as np
 
 from qiezi import write_tiff, extract_nodata_value
 
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+from utils import geotransform_from_center_coords
 
 # 准备
 in_nc_dir = r'I:\DataHub\ERA5\ERA5-Land\Chuanxi\t2m_tp'
@@ -40,7 +45,7 @@ os.makedirs(out_t2m_dir, exist_ok=True)
 os.makedirs(out_tp_dir, exist_ok=True)
 
 # 逐年计算年均t2m和年总tp
-geo_transform = None  # 地理变换参数, (lon_min, lon_res, 0, lat_max, 0, -lat_res)
+geo_transform = None  # 地理变换参数, 基于ERA5像元中心坐标换算到左上角
 for cur_year in range(start_year, end_year + 1):
     # 获取当前年份的nc文件路径
     nc_wildcard = os.path.join(in_nc_dir, f'{cur_year}*.nc')
@@ -60,10 +65,7 @@ for cur_year in range(start_year, end_year + 1):
         if geo_transform is None:
             lon = ds.variables['longitude'][:]
             lat = ds.variables['latitude'][:]
-            lon_res = float(lon[1] - lon[0])
-            lat_res = float(lat[0] - lat[1])  # lat递减, lat_res为正值
-            lon_min, lat_max = float(lon.min()), float(lat.max())
-            geo_transform = (lon_min, lon_res, 0, lat_max, 0, -lat_res)  # gdal标准
+            geo_transform = geotransform_from_center_coords(lon, lat)
 
     # 年尺度聚合 + 单位转换
     t2m_yearly = np.nanmean(t2m_cur, axis=0) - 273.15  # 年均气温, K -> °C
