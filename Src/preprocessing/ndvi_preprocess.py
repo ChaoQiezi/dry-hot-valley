@@ -15,13 +15,14 @@ This script is used to 对GEE下载的NDVI数据进行预处理
 """
 
 import os
-import numpy as np
-import rasterio as rio
-from osgeo import gdal
-from dask.distributed import Client, LocalCluster
 from glob import glob
 
-from qiezi import img_reproject, warp_by_tiff, build_overviews, compute_statistics, extract_nodata_value
+import numpy as np
+import rasterio as rio
+from dask.distributed import Client, LocalCluster
+from osgeo import gdal
+
+from qiezi import build_overviews, compute_statistics, extract_nodata_value, img_reproject, warp_by_tiff
 
 
 def remove_invalid_values(img_path):
@@ -60,8 +61,8 @@ in_dir = r'I:\DataWorkspace\NDVI\Sentinel-2\Xinan'
 out_dir = r'E:\GeoProjects\dry_hot_valley\NDVI\Yearly'
 ref_path = r"G:\GeoProjects\dry_hot_valley\geo_factor\DEM\xinan\elevation_10m_proj_xinan_region.tif"
 out_res = 10  # 米/m
-start_year = 2019
-end_year = 2023
+start_year = 2025
+end_year = 2025
 force_rerun = False  # True: 强制重跑
 
 if __name__ == '__main__':
