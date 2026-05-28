@@ -16,7 +16,7 @@ This script is used to 在岷江河道4km缓冲区内重算3km网格VAI
   - NDVI 年际均值栅格 (NDVI_interannual_mean_region.tif), UTM 47N, 10m
   - 迎风/背风二值栅格 (windward_leeward_region.tif), 1=迎风, 2=背风
   - DEM 栅格 (elevation_10m_projected_region.tif)
-  - 河道中心线 (centerline_final.shp, 筛选 Minjiang 特征)
+  - 总预处理生成的岷江中心线 (Minjiang_centerline.shp)
 输出:
   - VAI_3km_buffer.tif 等 8 个栅格 (与 _strict 同套字段)
 """
@@ -26,25 +26,23 @@ import time
 import warnings
 
 import numpy as np
-import rasterio as rio
-import shapefile
 from pyproj import CRS, Transformer
+import rasterio as rio
 from rasterio.features import rasterize
 from rasterio.transform import from_origin
 from rasterio.windows import Window
 from scipy.stats import ttest_ind
+import shapefile
 from shapely.geometry import LineString
 from shapely.ops import unary_union
 
 warnings.filterwarnings("ignore")
 
-# ============================================================
 # 0. Configuration
-# ============================================================
 NDVI_PATH = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\NDVI\Interannual\NDVI_interannual_mean_region.tif"
 DIRECTION_PATH = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\geo_factor\windward_leeward_region.tif"
 DEM_PATH = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\geo_factor\elevation_10m_projected_region.tif"
-CENTERLINE_PATH = r"E:\GeoProjects\dry_hot_valley\valley_area\river_net\centerline_final.shp"
+CENTERLINE_PATH = r"E:\GeoProjects\dry_hot_valley\river_net\xinan\valley_centerlines\Minjiang_centerline.shp"
 
 OUT_DIR = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\VAI"
 OUT_VAI_PATH = os.path.join(OUT_DIR, "VAI_3km_buffer.tif")
@@ -76,9 +74,7 @@ NDVI_MIN = 0.1
 MIN_VALLEY_PIXELS = MIN_PIXEL_THRESHOLD * 2
 
 
-# ============================================================
 # 1. Helpers
-# ============================================================
 def iter_parts(shape):
     parts = list(shape.parts) + [len(shape.points)]
     for i in range(len(parts) - 1):
@@ -88,7 +84,7 @@ def iter_parts(shape):
 
 
 def load_centerline_lines(shp_path, name_filter, dst_crs):
-    """读取 centerline_final 中目标河谷的所有 LineString, 投影到 dst_crs."""
+    """读取总预处理中心线中目标河谷的所有 LineString, 投影到 dst_crs."""
     prj_path = os.path.splitext(shp_path)[0] + ".prj"
     with open(prj_path, "r", errors="ignore") as f:
         src_crs = CRS.from_wkt(f.read())
@@ -125,9 +121,7 @@ def build_buffer_mask_10m(lines, buffer_m, ref_height, ref_width, ref_transform)
     return mask
 
 
-# ============================================================
 # 2. Main
-# ============================================================
 if __name__ == "__main__":
     t_start = time.time()
 

@@ -14,34 +14,32 @@ This script is used to 在4km河道buffer内的3km VAI上做迎背风海拔阈�
 
 import math
 import os
+from pathlib import Path
 import time
 import warnings
-from pathlib import Path
 
 import matplotlib.pyplot as plt
+from matplotlib.colors import TwoSlopeNorm
 import numpy as np
 import pandas as pd
-import rasterio as rio
-import shapefile
-from matplotlib.colors import TwoSlopeNorm
 from pyproj import CRS, Transformer
+import rasterio as rio
 from rasterio.transform import xy
 from scipy.spatial import cKDTree
+import shapefile
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 warnings.filterwarnings("ignore")
 
-# ============================================================
 # 0. Configuration
-# ============================================================
-BASE = r"E:\GeoProjects\dry_hot_valley"
+BASE = r"E:\GeoProjects\dry_hot_valley\valley_analysis"
 
 VAI_PATH = os.path.join(BASE, r"Minjiang\VAI\VAI_3km_buffer.tif")
 DEM3_PATH = os.path.join(BASE, r"Minjiang\VAI\DEM_3km_buffer.tif")
 FRAC_PATH = os.path.join(BASE, r"Minjiang\VAI\valley_fraction_3km_buffer.tif")
 PVAL_PATH = os.path.join(BASE, r"Minjiang\VAI\VAI_pvalue_3km_buffer.tif")
 DEM10_PATH = os.path.join(BASE, r"Minjiang\geo_factor\elevation_10m_projected_region.tif")
-CENTERLINE_PATH = os.path.join(BASE, r"valley_area\river_net\centerline_final.shp")
+CENTERLINE_PATH = r"E:\GeoProjects\dry_hot_valley\river_net\xinan\valley_centerlines\Minjiang_centerline.shp"
 
 OUT_TABLE_DIR = os.path.join(BASE, r"Minjiang\Result\Table\altitude")
 OUT_CHART_DIR = os.path.join(BASE, r"Minjiang\Result\Chart\altitude")
@@ -90,9 +88,7 @@ plt.rcParams.update({
 })
 
 
-# ============================================================
 # 1. Geometry & loading
-# ============================================================
 def iter_parts(shape):
     parts = list(shape.parts) + [len(shape.points)]
     for i in range(len(parts) - 1):
@@ -144,7 +140,7 @@ def load_centerline_in_raster_crs():
         if rec.get("Name") != MINJIANG_NAME:
             continue
         feature_index += 1
-        target_fid = int(rec.get("TARGET_FID"))
+        target_fid = int(rec.get("arcid", rec.get("TARGET_FID", feature_index)))
         for pts in iter_parts(sr.shape):
             xs_raw, ys_raw = zip(*pts)
             if same_crs:
@@ -222,9 +218,7 @@ def load_buffer_grid(centerline):
     return grid
 
 
-# ============================================================
 # 2. Binning, LOWESS, threshold
-# ============================================================
 def bin_stats(df, axis_col, bin_step):
     values = df[axis_col].to_numpy()
     if len(values) == 0:
@@ -311,9 +305,7 @@ def bootstrap_threshold(df, axis_col, x_min=None, x_max=None,
     )
 
 
-# ============================================================
 # 3. Plot
-# ============================================================
 def plot_threshold(grid, abs_bin, rel_bin, summary, centerline_parts):
     fig = plt.figure(figsize=(11.5, 8.0))
     gs = fig.add_gridspec(2, 2, width_ratios=[1, 1], height_ratios=[1, 1],
@@ -447,9 +439,7 @@ def plot_threshold(grid, abs_bin, rel_bin, summary, centerline_parts):
     plt.close(fig)
 
 
-# ============================================================
 # 4. Main
-# ============================================================
 if __name__ == "__main__":
     t_start = time.time()
     print("=" * 72)

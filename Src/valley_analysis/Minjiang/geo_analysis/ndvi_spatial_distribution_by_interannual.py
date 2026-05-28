@@ -8,20 +8,20 @@
 This script is used to 进行年际尺度的NDVI计算(空间上)
 """
 
-import os
 from glob import glob
-import numpy as np
-import xarray as xr
-from dask.distributed import Client, LocalCluster
+import os
+
 from dask.diagnostics import ProgressBar
+from dask.distributed import Client, LocalCluster
+import numpy as np
+from qiezi import build_overviews, compute_statistics
 import rasterio as rio
 import rioxarray as rxr
-
-from qiezi import build_overviews, compute_statistics
+import xarray as xr
 
 # 准备
 in_dir = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\NDVI\Yearly"
-out_path = r'E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\NDVI\Interannual\NDVI_interannual_mean.tif'
+out_path = r'E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\NDVI\Interannual\NDVI_interannual_mean_region.tif'
 chunk_size = 4096
 
 if __name__ == '__main__':
