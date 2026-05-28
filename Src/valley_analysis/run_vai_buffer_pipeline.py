@@ -20,7 +20,7 @@ import sys
 import subprocess
 import time
 
-# ======================== Configuration ========================
+# 准备
 python_geo = r'D:/Softwares/Anaconda3/envs/geo/python.exe'
 python_arcpy = r'D:/Softwares/Anaconda3/envs/ArcGISPro/python.exe'
 project_src = r'F:\PyProJect\dry_hot_valley\Src\valley_analysis'
@@ -67,7 +67,6 @@ force_rerun = True
 # 如果 Step 1 (unify_dataset) 是手动在 PyCharm 中逐个运行的, 跑完后将此标记设为 True.
 # 这样即使 force_rerun=False, 下游也会因为上游已更新而自动重跑.
 manual_step1_done = False
-# ================================================================
 
 
 def run_script(python_exe, script_path, description):
@@ -97,6 +96,7 @@ def check_outputs_exist(file_patterns, description):
 
 
 def main():
+    """按 Step 1-4 顺序执行 VAI buffer 分析全链条"""
     print(f'Pipeline started: {time.strftime("%Y-%m-%d %H:%M:%S")}')
     print(f'Python (geo): {python_geo}')
     print(f'Python (ArcGISPro): {python_arcpy}')
@@ -104,9 +104,7 @@ def main():
 
     upstream_was_run = False  # 链式触发: 上游重跑则下游必须重跑
 
-    # ================================================================
     # Step 1: unify_dataset.py × 4 — 重新裁剪 windward_leeward_region.tif
-    # ================================================================
     # 注意: 此步需要 ArcGISPro 解释器, 且目前仅裁剪 windward_leeward
     # (DEM/NDVI 部分已在 unify_dataset.py 中注释).
     # 取消注释下方整块即可在管道中自动运行; 也可在 PyCharm 中手动逐个运行.
@@ -133,9 +131,7 @@ def main():
         upstream_was_run = True
         print(f'  -> manual_step1_done=True, downstream will rerun.')
 
-    # ================================================================
     # Step 2: VAI_spatial_distribution_buffer.py — 批量 buffer VAI 3km
-    # ================================================================
     if not force_rerun and not upstream_was_run:
         if check_outputs_exist(buffer_vai_tifs, 'VAI_3km_buffer.tif'):
             print(f'[{time.strftime("%H:%M:%S")}] Step 2 (VAI_spatial_distribution_buffer) -- outputs exist, SKIP.')
@@ -150,9 +146,7 @@ def main():
             return
         upstream_was_run = True
 
-    # ================================================================
     # Step 3: VAI_altitude_gradient_buffer.py — 四河合并阈值 + bootstrap + 森林图
-    # ================================================================
     if not force_rerun and not upstream_was_run:
         if check_outputs_exist(combined_outputs, 'combined threshold outputs'):
             print(f'[{time.strftime("%H:%M:%S")}] Step 3 (VAI_altitude_gradient_buffer) -- outputs exist, SKIP.')
@@ -167,9 +161,7 @@ def main():
             return
         upstream_was_run = True
 
-    # ================================================================
     # Step 4: zhao_threshold_intensity.py — 河段强弱分级 (可选)
-    # ================================================================
     # TODO: 如需跑此步, 取消注释下方整块.
     # if not force_rerun and not upstream_was_run:
     #     if check_outputs_exist(zhao_outputs, 'zhao segment intensity'):
@@ -185,7 +177,6 @@ def main():
     #         return
     #     upstream_was_run = True
 
-    # ================================================================
     print(f'\n{"="*60}')
     print(f'Pipeline SUCCESS: {time.strftime("%Y-%m-%d %H:%M:%S")}')
     print(f'{"="*60}')

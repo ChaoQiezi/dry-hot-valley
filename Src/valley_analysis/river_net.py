@@ -1,17 +1,22 @@
+# @Author  : ChaoQiezi
+# @Time    : 2026/05/28
+# @Email   : chaoqiezi.one@qq.com
+# @Wechat  : GIS茄子
+# @FileName: river_net.py
+
 # -*- coding: utf-8 -*-
 """
 川西干热河谷 - 河流中心线提取工具（含河流分级）
 基于DEM水文分析 + Strahler分级提取河谷范围内的主干河流
 """
 
-import arcpy
-from arcpy.sa import *
 import os
 import time
 
-# ============================================================
+import arcpy
+from arcpy.sa import *
+
 # 【第一部分】参数配置
-# ============================================================
 workspace = r"E:\GeoProjects\dry_hot_valley\valley_area\river_net"
 
 dem_input = r"G:\GeoProjects\dry_hot_valley\geo_factor\DEM\GLO-30\elevation_10m_projected.tif"
@@ -22,12 +27,11 @@ stream_threshold = 10000
 # stream_order_mode = "auto"  # 自动分级, 默认保留最高级和次高级
 stream_order_mode = 4  # 保留大于等于4的河流段
 
-# ============================================================
 # 【第二部分】环境设置
-# ============================================================
 
 
 def setup_environment():
+    """初始化 ArcGIS Spatial Analyst 扩展和工作空间环境"""
     if arcpy.CheckExtension("Spatial") == "Available":
         arcpy.CheckOutExtension("Spatial")
         print("[OK] Spatial Analyst 扩展已启用")
@@ -49,11 +53,10 @@ def setup_environment():
     print(f"[OK] 工作空间: {workspace}")
 
 
-# ============================================================
 # 【第三部分】处理步骤
-# ============================================================
 
 def step1_buffer_and_clip():
+    """对河谷多边形做缓冲区后裁剪 DEM，返回裁剪后的 DEM 路径"""
     print("\n" + "=" * 60)
     print("步骤1：缓冲区裁剪DEM")
     print("=" * 60)
@@ -73,6 +76,7 @@ def step1_buffer_and_clip():
 
 
 def step2_fill(dem_clipped):
+    """对裁剪后的 DEM 执行填洼处理"""
     print("\n" + "=" * 60)
     print("步骤2：DEM填洼")
     print("=" * 60)
@@ -85,6 +89,7 @@ def step2_fill(dem_clipped):
 
 
 def step3_flow_direction(filled_dem):
+    """基于填洼后的 DEM 计算流向栅格"""
     print("\n" + "=" * 60)
     print("步骤3：计算流向")
     print("=" * 60)
@@ -97,6 +102,7 @@ def step3_flow_direction(filled_dem):
 
 
 def step4_flow_accumulation(flow_dir):
+    """计算汇流累积量栅格"""
     print("\n" + "=" * 60)
     print("步骤4：计算汇流累积量")
     print("=" * 60)
@@ -115,6 +121,7 @@ def step4_flow_accumulation(flow_dir):
 
 
 def step5_extract_stream(flow_acc):
+    """按阈值提取河网栅格"""
     print("\n" + "=" * 60)
     print(f"步骤5：提取河网（阈值={stream_threshold}）")
     print("=" * 60)
@@ -126,6 +133,7 @@ def step5_extract_stream(flow_acc):
 
 
 def step6_stream_order(stream_raster, flow_dir):
+    """对提取的河网执行 Strahler 河流分级"""
     print("\n" + "=" * 60)
     print("步骤6：Strahler河流分级")
     print("=" * 60)
@@ -148,6 +156,7 @@ def step6_stream_order(stream_raster, flow_dir):
 
 
 def step7_filter_main_trunk(order_raster, max_order):
+    """根据分级模式筛选主干河流（保留指定级别以上的河段）"""
     print("\n" + "=" * 60)
     print("步骤7：筛选主干河流")
     print("=" * 60)
@@ -167,6 +176,7 @@ def step7_filter_main_trunk(order_raster, max_order):
 
 
 def step8_stream_to_feature(main_stream, flow_dir):
+    """将主干河网栅格转换为矢量线要素"""
     print("\n" + "=" * 60)
     print("步骤8：主干河网矢量化")
     print("=" * 60)
@@ -180,6 +190,7 @@ def step8_stream_to_feature(main_stream, flow_dir):
 
 
 def step9_clip_to_valley(stream_vector):
+    """将河网矢量裁剪到河谷多边形范围内"""
     print("\n" + "=" * 60)
     print("步骤9：裁剪到河谷范围")
     print("=" * 60)
@@ -306,11 +317,10 @@ def step10_select_main_per_valley(stream_clipped):
     return final_stream
 
 
-# ============================================================
 # 【第四部分】主函数
-# ============================================================
 
 def main():
+    """按顺序执行河流中心线提取的完整处理流程"""
     print("=" * 60)
     print("  川西干热河谷 - 主干河流中心线提取")
     print(f"  河网阈值: {stream_threshold}")
