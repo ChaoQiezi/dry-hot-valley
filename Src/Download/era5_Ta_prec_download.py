@@ -2,7 +2,7 @@
 # @Time    : 2026/3/11 下午3:46
 # @Email   : chaoqiezi.one@qq.com
 # @Wechat  : GIS茄子
-# @FileName: era5_uv_download.py
+# @FileName: era5_Ta_prec_download.py
 
 """
 This script is used to 批量下载ERA5的2m气温数据集(temperature_2m)、总降水量数据集(total_precipitation)

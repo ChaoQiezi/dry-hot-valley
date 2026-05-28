@@ -2,7 +2,7 @@
 # @Time    : 2026/3/13 下午2:31
 # @Email   : chaoqiezi.one@qq.com
 # @Wechat  : GIS茄子
-# @FileName: dead_code.py
+# @FileName: ndvi_mean_total.py
 
 """
 This script is used to 基于NDVI年际均值栅格, 分别计算迎风坡和背风坡的NDVI均值
@@ -14,9 +14,9 @@ WW mean: 0.7111
 LW mean: 0.7570
 """
 
-from dask.distributed import LocalCluster, Client
 import rasterio as rio
 import rioxarray as rxr
+from dask.distributed import Client, LocalCluster
 
 # 准备
 ndvi_path = r"E:\GeoProjects\dry_hot_valley\NDVI\Interannual\NDVI_interannual_mean.tif"

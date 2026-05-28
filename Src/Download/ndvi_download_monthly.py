@@ -8,12 +8,13 @@
 This script is used to 批量下载月尺度的NDVI数据
 """
 
-import ee
-from datetime import datetime
 from calendar import monthrange
+from datetime import datetime
+
+import ee
+from qiezi.ee_utils import ee_export_image, image_float2int
 
 from utils import cal_ndvi, cloud_mask_by_probability
-from qiezi.ee_utils import ee_export_image, image_float2int
 
 # 准备
 ee.Initialize(project='chaoqiezipython')

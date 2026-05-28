@@ -1,9 +1,20 @@
-import ee
-from datetime import datetime
+# @Author  : ChaoQiezi
+# @Time    : 2026/05/28
+# @Email   : chaoqiezi.one@qq.com
+# @Wechat  : GIS茄子
+# @FileName: ndvi_download.py
+
+"""
+This script is used to 从GEE下载Sentinel-2 NDVI数据（生长季MVC合成 + 云掩膜）。
+"""
+
 from calendar import monthrange
+from datetime import datetime
+
+import ee
+from qiezi.ee_utils import ee_export_image, image_float2int
 
 from utils import cal_ndvi, cloud_mask_by_probability
-from qiezi.ee_utils import ee_export_image, image_float2int
 
 # 准备
 ee.Initialize(project='chaoqiezipython')

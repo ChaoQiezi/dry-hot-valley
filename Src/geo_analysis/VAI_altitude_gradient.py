@@ -23,22 +23,19 @@ VAI_3km.tif 和 DEM_3km.tif 已在VAI空间分布计算阶段同步生成,
 """
 
 import os
+
 import numpy as np
 import pandas as pd
 import rasterio as rio
 
-# ============================================================
 # 0. Configuration
-# ============================================================
 vai_path = r"E:\GeoProjects\dry_hot_valley\VAI\VAI_3km.tif"
 dem_path = r"E:\GeoProjects\dry_hot_valley\VAI\DEM_3km.tif"
 out_path = r"E:\GeoProjects\dry_hot_valley\Result\Table\altitude\VAI_altitude_gradient.xlsx"
 
 elev_step = 100  # 高程梯度间隔(m)
 
-# ============================================================
 # 1. Read data
-# ============================================================
 if __name__ == '__main__':
     print("Reading VAI_3km...")
     with rio.open(vai_path, 'r') as src:
@@ -56,9 +53,7 @@ if __name__ == '__main__':
 
     print(f"  Shape: {vai_data.shape}")
 
-    # ============================================================
     # 2. Paired valid data
-    # ============================================================
     both_valid = np.isfinite(vai_data) & np.isfinite(dem_data)
     vai_flat = vai_data[both_valid]
     elev_flat = dem_data[both_valid]
@@ -66,9 +61,7 @@ if __name__ == '__main__':
     print(f"  Elevation range: [{elev_flat.min():.0f}, {elev_flat.max():.0f}] m")
     print(f"  VAI range: [{vai_flat.min():.4f}, {vai_flat.max():.4f}]")
 
-    # ============================================================
     # 3. Bin by elevation
-    # ============================================================
     elev_lo = int(np.floor(elev_flat.min() / elev_step) * elev_step)
     elev_hi = int(np.ceil(elev_flat.max() / elev_step) * elev_step)
     elev_edges = np.arange(elev_lo, elev_hi + elev_step, elev_step)
@@ -107,9 +100,7 @@ if __name__ == '__main__':
             'count': cnt,
         })
 
-    # ============================================================
     # 4. Output
-    # ============================================================
     df = pd.DataFrame(records)
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     df.to_excel(out_path, index=False)

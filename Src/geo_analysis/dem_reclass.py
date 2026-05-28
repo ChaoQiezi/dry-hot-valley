@@ -11,25 +11,26 @@ dem梯度为1000m
 """
 
 import os
-import numpy as np
-import rasterio as rio
-from rasterio.enums import Resampling
 import warnings
 
+import numpy as np
+import rasterio as rio
 from qiezi import build_overviews
+from rasterio.enums import Resampling
 
 warnings.filterwarnings('ignore')
 
+# 准备
+dem_path = r"E:\GeoProjects\dry_hot_valley\GeoFactor\DEM\elevation_10m_projected.tif"
+out_dir = r"E:\GeoProjects\dry_hot_valley\GeoFactor\DEM"
+out_reclass_path = os.path.join(out_dir, "elevation_reclass_1000m.tif")
+dem_gradient = 1000
+nodata = 255
+
+os.makedirs(out_dir, exist_ok=True)
+
 
 if __name__ == '__main__':
-    # 准备
-    dem_path = r"E:\GeoProjects\dry_hot_valley\GeoFactor\DEM\elevation_10m_projected.tif"
-    out_dir = r"E:\GeoProjects\dry_hot_valley\GeoFactor\DEM"
-    out_reclass_path = os.path.join(out_dir, "elevation_reclass_1000m.tif")
-    os.makedirs(out_dir, exist_ok=True)
-    dem_gradient = 1000
-    nodata = 255
-
     # 读取
     with rio.open(dem_path, 'r') as src:
         dem = src.read(1, masked=True)

@@ -10,13 +10,13 @@ This script is used to 进行年际尺度的NDVI计算(空间上)
 
 import os
 from glob import glob
+
 import numpy as np
-import xarray as xr
-from dask.distributed import Client, LocalCluster
-from dask.diagnostics import ProgressBar
 import rasterio as rio
 import rioxarray as rxr
-
+import xarray as xr
+from dask.diagnostics import ProgressBar
+from dask.distributed import Client, LocalCluster
 from qiezi import build_overviews, compute_statistics
 
 # 准备

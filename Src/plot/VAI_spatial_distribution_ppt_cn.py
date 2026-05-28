@@ -9,55 +9,41 @@
 输入:
   - E:/GeoProjects/dry_hot_valley/VAI/VAI_3km.tif
   - E:/GeoProjects/dry_hot_valley/valley_area/valley_chuanxi/valley_clip.shp
-
 输出:
   - E:/GeoProjects/dry_hot_valley/Result/Chart/VAI_spatial_distribution_ppt_cn.png
   - E:/GeoProjects/dry_hot_valley/Result/Chart/VAI_spatial_distribution_ppt_cn.pdf
 """
 
 from __future__ import annotations
-
 from pathlib import Path
 
 import matplotlib.colors as mcolors
 import matplotlib.font_manager as fm
-import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
+import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import numpy as np
 import rasterio as rio
-
-
-# ============================================================
-# 0. 路径与参数
-# ============================================================
 DATA_ROOT = Path(r"E:\GeoProjects\dry_hot_valley")
 VAI_PATH = DATA_ROOT / "VAI" / "VAI_3km.tif"
-
-
 OUT_DIR = DATA_ROOT / "Result" / "Chart"
 OUT_PNG = OUT_DIR / "VAI_spatial_distribution_ppt_cn.png"
 OUT_PDF = OUT_DIR / "VAI_spatial_distribution_ppt_cn.pdf"
 OUT_MAP_ONLY_PNG = OUT_DIR / "VAI_spatial_distribution_map_only_cn.png"
-
 # 色阶按 1%-99% 附近设置为对称范围，极端值用 extend 表示。
 VAI_ABS_LIMIT = 60
-
 VALLEY_COLORS = {
     "岷江": "#1B9E77",
     "大渡河": "#D95F02",
     "金沙江": "#7570B3",
     "雅砻江": "#E7298A",
 }
-
 LABEL_POS_KM = {
     "岷江": (940, 3545),
     "大渡河": (792, 3415),
     "金沙江": (650, 3090),
     "雅砻江": (760, 3285),
 }
-
-
 def set_chinese_font() -> str:
     """优先使用项目机器上已有的中文字体，避免中文乱码。"""
     preferred = ["Microsoft YaHei", "Source Han Sans CN", "SimHei", "SimSun"]
@@ -70,13 +56,11 @@ def set_chinese_font() -> str:
             return font_name
     plt.rcParams["axes.unicode_minus"] = False
     return "default"
-
-
 def km_formatter(x: float, pos: int | None = None) -> str:
+    """将米制坐标值转换为公里制字符串显示，用作 UTM 坐标轴的刻度格式化器"""
     return f"{x / 1000:.0f}"
-
-
 def add_scale_bar(ax, x0: float, y0: float, length_m: float = 100_000) -> None:
+    """在地图上绘制比例尺，以 UTM 投影坐标定位，含两端竖线和距离文字标注"""
     ax.plot([x0, x0 + length_m], [y0, y0], color="#222222", lw=2.6, solid_capstyle="butt")
     tick = 7000
     ax.plot([x0, x0], [y0 - tick / 2, y0 + tick / 2], color="#222222", lw=2.0)
@@ -90,9 +74,8 @@ def add_scale_bar(ax, x0: float, y0: float, length_m: float = 100_000) -> None:
         fontsize=10,
         color="#222222",
     )
-
-
 def add_north_arrow(ax, x: float, y: float, length_m: float = 45_000) -> None:
+    """在地图上绘制指北针箭头和 N 标注，以 UTM 投影坐标定位"""
     ax.annotate(
         "",
         xy=(x, y + length_m),
@@ -100,9 +83,8 @@ def add_north_arrow(ax, x: float, y: float, length_m: float = 45_000) -> None:
         arrowprops=dict(arrowstyle="-|>", lw=2.0, color="#222222", mutation_scale=18),
     )
     ax.text(x, y + length_m + 8000, "N", ha="center", va="bottom", fontsize=12, weight="bold")
-
-
 def annotate_valley_labels(ax) -> None:
+    """在地图上按预定义坐标标注四条干热河谷名称，使用白色描边提高可读性"""
     for short_name, color in VALLEY_COLORS.items():
         if short_name in LABEL_POS_KM:
             x_km, y_km = LABEL_POS_KM[short_name]
@@ -118,12 +100,14 @@ def annotate_valley_labels(ax) -> None:
                 zorder=7,
                 path_effects=[pe.withStroke(linewidth=4, foreground="white")],
             )
-
-
 def main() -> None:
+    """绘制组会PPT用VAI空间分布图。
+
+    包含主图（VAI空间分布+河谷标注）、色标、统计信息面板和直方图。
+    同时输出纯地图版PNG，方便在PPT中自行配标题和图例。
+    """
     set_chinese_font()
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-
     plt.rcParams.update({
         "font.size": 9,
         "axes.linewidth": 0.8,
@@ -135,14 +119,12 @@ def main() -> None:
         "figure.facecolor": "white",
         "axes.facecolor": "white",
     })
-
     with rio.open(VAI_PATH) as src:
         vai = src.read(1).astype("float32")
         nodata = src.nodata
         crs = src.crs
         bounds = src.bounds
         extent = [bounds.left, bounds.right, bounds.bottom, bounds.top]
-
     if nodata is not None and np.isfinite(nodata):
         vai[vai == nodata] = np.nan
     vai = np.where(np.isfinite(vai), vai, np.nan)
@@ -150,18 +132,15 @@ def main() -> None:
     valid = vai[np.isfinite(vai)]
     if valid.size == 0:
         raise ValueError(f"VAI 栅格没有有效值: {VAI_PATH}")
-
     pct_pos = float((valid > 0).mean() * 100)
     pct_neg = float((valid < 0).mean() * 100)
     median_vai = float(np.median(valid))
     q01, q99 = np.percentile(valid, [1, 99])
-
     valid_rows, valid_cols = np.where(np.isfinite(vai))
     x_min = bounds.left + valid_cols.min() * 3000 - 15_000
     x_max = bounds.left + (valid_cols.max() + 1) * 3000 + 15_000
     y_max = bounds.top - valid_rows.min() * 3000 + 15_000
     y_min = bounds.top - (valid_rows.max() + 1) * 3000 - 15_000
-
     cmap = mcolors.LinearSegmentedColormap.from_list(
         "vai_blue_green",
         ["#2166AC", "#92C5DE", "#F7F7F7", "#A6D96A", "#1A9850"],
@@ -169,9 +148,7 @@ def main() -> None:
     )
     cmap.set_bad((1, 1, 1, 0))
     norm = mcolors.TwoSlopeNorm(vmin=-VAI_ABS_LIMIT, vcenter=0, vmax=VAI_ABS_LIMIT)
-
     fig = plt.figure(figsize=(13.33, 7.5), dpi=300)
-
     # 手工控制版式，避免 PPT 宽屏图中标题、色标和统计框互相挤压。
     ax = fig.add_axes([0.055, 0.105, 0.405, 0.760])
     im = ax.imshow(
@@ -183,9 +160,7 @@ def main() -> None:
         interpolation="nearest",
         zorder=1,
     )
-
     annotate_valley_labels(ax)
-
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(y_min, y_max)
     ax.set_aspect("equal", adjustable="box")
@@ -195,10 +170,8 @@ def main() -> None:
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(km_formatter))
     ax.grid(color="#9E9E9E", linewidth=0.35, linestyle="--", alpha=0.35)
     ax.tick_params(top=True, right=True, labelsize=9)
-
     add_scale_bar(ax, x_min + 32_000, y_min + 42_000, 100_000)
     add_north_arrow(ax, x_max - 42_000, y_max - 82_000)
-
     cax = fig.add_axes([0.500, 0.315, 0.030, 0.465])
     cbar = fig.colorbar(im, cax=cax, orientation="vertical", extend="both")
     cbar.set_label("VAI (%)", fontsize=10)
@@ -227,7 +200,6 @@ def main() -> None:
         color="#2166AC",
         weight="bold",
     )
-
     ax_info = fig.add_axes([0.585, 0.555, 0.360, 0.270])
     ax_info.axis("off")
     ax_info.text(
@@ -245,7 +217,6 @@ def main() -> None:
         y = legend_y - i * 0.17
         ax_info.plot([0.02, 0.26], [y, y], color=color, lw=3.0, transform=ax_info.transAxes)
         ax_info.text(0.31, y, name, transform=ax_info.transAxes, va="center", fontsize=9)
-
     ax_stats = fig.add_axes([0.585, 0.415, 0.360, 0.105])
     ax_stats.axis("off")
     ax_stats.text(
@@ -262,7 +233,6 @@ def main() -> None:
         linespacing=1.25,
         bbox=dict(boxstyle="round,pad=0.35", fc="#FAFAFA", ec="#D6D6D6", alpha=0.95),
     )
-
     ax_hist = fig.add_axes([0.585, 0.115, 0.360, 0.255])
     bins = np.linspace(-VAI_ABS_LIMIT, VAI_ABS_LIMIT, 49)
     clipped = valid[(valid >= -VAI_ABS_LIMIT) & (valid <= VAI_ABS_LIMIT)]
@@ -278,7 +248,6 @@ def main() -> None:
     ax_hist.set_ylabel("网格数", fontsize=9.5)
     ax_hist.tick_params(labelsize=8, top=True, right=True)
     ax_hist.grid(axis="y", color="#C8C8C8", lw=0.35, alpha=0.55)
-
     fig.suptitle("川西干热河谷迎/背风坡植被不对称指数（VAI）空间分布", fontsize=15.5, weight="bold", y=0.955)
     fig.text(
         0.055,
@@ -298,11 +267,9 @@ def main() -> None:
         fontsize=8.5,
         color="#666666",
     )
-
     fig.savefig(OUT_PNG, dpi=300)
     # fig.savefig(OUT_PDF)
     plt.close(fig)
-
     # 另存一张纯地图版，方便在 PPT 中自行配标题和图例。
     fig_map = plt.figure(figsize=(8.0, 9.6), dpi=300)
     ax_map = fig_map.add_axes([0.105, 0.075, 0.79, 0.87])
@@ -329,7 +296,6 @@ def main() -> None:
     add_north_arrow(ax_map, x_max - 42_000, y_max - 82_000)
     fig_map.savefig(OUT_MAP_ONLY_PNG, dpi=300)
     plt.close(fig_map)
-
     print(f"PNG saved: {OUT_PNG}")
     print(f"PDF saved: {OUT_PDF}")
     print(f"Map-only PNG saved: {OUT_MAP_ONLY_PNG}")
@@ -337,7 +303,5 @@ def main() -> None:
     print(f"VAI median: {median_vai:.3f}%")
     print(f"VAI > 0: {pct_pos:.1f}%")
     print(f"VAI < 0: {pct_neg:.1f}%")
-
-
 if __name__ == "__main__":
     main()

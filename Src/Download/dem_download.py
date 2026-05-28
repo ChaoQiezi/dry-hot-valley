@@ -2,7 +2,7 @@
 # @Time    : 2026/3/7 下午4:13
 # @Email   : chaoqiezi.one@qq.com
 # @Wechat  : GIS茄子
-# @FileName: mcd12q1_download.py
+# @FileName: dem_download.py
 
 """
 This script is used to 批量下载ALOS DEM数据集(废弃)

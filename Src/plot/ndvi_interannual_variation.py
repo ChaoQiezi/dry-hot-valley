@@ -10,21 +10,18 @@ This script is used to 绘制NDVI年尺度的时间序列变化
 除NDVI年均值和标准差外, 还包括MK趋势和Sen率, 并绘制趋势线.
 """
 
+import matplotlib.ticker as mticker
+from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
-import matplotlib.ticker as mticker
 import pymannkendall as mk
-
 from qiezi.stats import mk_trend_slope
 
 # 准备
 in_path = r'E:\GeoProjects\dry_hot_valley\Output\Table\NDVI_yearly_mean.xlsx'
 out_path = r'E:\GeoProjects\dry_hot_valley\Result\Chart\NDVI_interannual_variation.png'
-
 # 读取
 df = pd.read_excel(in_path, index_col='year')
-
 # MK趋势分析
 stats = mk_trend_slope(df['mean'].values)
 print('--- Mann-Kendall Trend Test Results ---')
@@ -35,7 +32,6 @@ print(f"Sen's Slope     : {stats['slope']:.6f}  "
       f"(95% CI: {stats['slope_ci_lo']:.6f} ~ {stats['slope_ci_hi']:.6f})")
 print(f"Sen's Intercept : {stats['intercept']:.4f}")
 print(f"Significant     : {'Yes ✓' if stats['significant'] else 'No ✗'}  (α = 0.05)")
-
 # 绘制准备
 years = df.index.values  # [2019, 2020, ..., 2025]
 x_idx = np.arange(len(years))  # [0, 1, 2, ..., 6]

@@ -2,7 +2,7 @@
 # @Time    : 2026/3/25 上午10:59
 # @Email   : chaoqiezi.one@qq.com
 # @Wechat  : GIS茄子
-# @FileName: yearly_mean.py
+# @FileName: ndvi_yearly_mean.py
 
 """
 This script is used to 进行年尺度的NDVI值计算(时间上)
@@ -12,14 +12,14 @@ This script is used to 进行年尺度的NDVI值计算(时间上)
 
 import os
 from glob import glob
+
 import numpy as np
 import pandas as pd
-import xarray as xr
-from dask.distributed import Client, LocalCluster
-from dask.diagnostics import ProgressBar
 import rasterio as rio
 import rioxarray as rxr
-
+import xarray as xr
+from dask.diagnostics import ProgressBar
+from dask.distributed import Client, LocalCluster
 from qiezi import build_overviews, compute_statistics
 
 # 准备

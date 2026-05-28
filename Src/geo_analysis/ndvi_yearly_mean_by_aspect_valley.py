@@ -2,7 +2,7 @@
 # @Time    : 2026/3/28 下午3:06
 # @Email   : chaoqiezi.one@qq.com
 # @Wechat  : GIS茄子
-# @FileName: ndvi_yearly_mean.py
+# @FileName: ndvi_yearly_mean_by_aspect_valley.py
 
 """
 This script is used to 分别计算迎风坡和背风坡的NDVI年际均值(2019-2025)
@@ -28,15 +28,14 @@ This script is used to 分别计算迎风坡和背风坡的NDVI年际均值(2019
 """
 
 import os
+
 import numpy as np
 import pandas as pd
+import rioxarray as rxr
 import xarray as xr
 from dask.distributed import Client, LocalCluster
-import rioxarray as rxr
 
-# ============================================================
-# 0. Configuration
-# ============================================================
+# 准备
 ndvi_dir = r'E:\GeoProjects\dry_hot_valley\NDVI\Yearly'
 direction_path = r"E:\GeoProjects\dry_hot_valley\GeoFactor\windward_leeward\windward_leeward.tif"  # 二值栅格: 1=迎风坡, 2=背风坡
 valley_path = r"E:\GeoProjects\dry_hot_valley\valley_area\valley_chuanxi\valley_chuanxi_clip.tif"
