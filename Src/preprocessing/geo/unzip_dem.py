@@ -10,15 +10,14 @@ Source: I:\DataHub\GLO-30_DEM\Tile*_DEM.tar.gz  → dem\Tile*_dem.tif
         I:\DataHub\GLO-30_DEM\Tile*_Viz.tar.gz  → slope\Tile*_slope.tif + aspect\Tile*_aspect.tif
 """
 
+from glob import glob
 import os
+import shutil
 import tarfile
 import tempfile
-import shutil
-from glob import glob
 
-# ======================== Configuration ========================
+# 解压配置
 in_dir = r'I:\DataHub\GLO-30_DEM'
-# ================================================================
 
 out_dirs = {
     'dem': os.path.join(in_dir, 'dem'),

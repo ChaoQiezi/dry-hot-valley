@@ -22,15 +22,16 @@ This script is used to 针对MCD12Q1(土地覆盖类型)产品数据集进行预
 """
 
 import os
-from glob import glob
-from datetime import datetime
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from osgeo import gdal
-from tqdm import tqdm
+from datetime import datetime
+from glob import glob
 import time
 
+from osgeo import gdal
+from tqdm import tqdm
+
 import Config
-from utils import process_modis_land_cover_yearly, img_reproject, img_mask, img_reclass
+from utils import img_mask, img_reclass, img_reproject, process_modis_land_cover_yearly
 
 # 准备
 in_dir = r'I:\DataHub\MCD12Q1'

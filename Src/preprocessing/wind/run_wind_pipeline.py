@@ -22,6 +22,7 @@ import time
 # 准备
 python_exe = r'D:/Softwares/Anaconda3/envs/geo/python.exe'
 project_src = os.path.dirname(os.path.abspath(__file__))
+data_base = r'G:\GeoProjects\dry_hot_valley'
 
 # 各步骤脚本路径
 step2_script = os.path.join(project_src, 'wind_direction_cal.py')
@@ -69,16 +70,15 @@ def check_outputs_exist(file_patterns, description, dependencies=None):
 
 def get_step_outputs():
     """定义各步骤的预期输出文件列表"""
-    base = r'G:\GeoProjects\dry_hot_valley'
     pressure_levels = [500, 600, 700, 800]
 
     outputs = {
         2: (
-            [os.path.join(base, 'wind_direction', '10m', f'wind_dir_{lev}hPa_10m.tif')
+            [os.path.join(data_base, 'wind_direction', '10m', f'wind_dir_{lev}hPa_10m.tif')
              for lev in pressure_levels],
             '10m wind direction (4 levels)'
         ),
-        3: ([os.path.join(base, 'wind_effect', 'wind_effect.tif')], 'wind_effect.tif (10m)'),
+        3: ([os.path.join(data_base, 'wind_effect', 'wind_effect.tif')], 'wind_effect.tif (10m)'),
         4: (
             [r'E:\GeoProjects\dry_hot_valley\GeoFactor\windward_leeward\windward_leeward.tif'],
             'windward_leeward.tif'

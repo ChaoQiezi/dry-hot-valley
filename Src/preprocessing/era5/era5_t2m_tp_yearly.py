@@ -2,7 +2,7 @@
 # @Time    : 2026/4/2
 # @Email   : chaoqiezi.one@qq.com
 # @Wechat  : GIS茄子
-# @FileName: era5_land_yearly.py
+# @FileName: era5_t2m_tp_yearly.py
 
 """
 This script is used to 从ERA5-Land的nc文件中计算年均t2m和年总tp, 输出为GeoTIFF文件
@@ -19,13 +19,14 @@ This script is used to 从ERA5-Land的nc文件中计算年均t2m和年总tp, 输
 后续使用ArcGIS Pro的模型构建器或QGIS的对齐栅格工具进行重投影和重采样
 """
 
+from glob import glob
 import os
 import sys
-from glob import glob
+
 import netCDF4 as nc
 import numpy as np
 
-from qiezi import write_tiff, extract_nodata_value
+from qiezi import extract_nodata_value, write_tiff
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 if project_root not in sys.path:

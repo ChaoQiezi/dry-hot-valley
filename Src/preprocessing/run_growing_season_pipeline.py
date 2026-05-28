@@ -17,13 +17,14 @@ Step 4: windward_leeward_divide.py     → 迎风/背风二分类
 """
 
 import os
-import sys
 import subprocess
+import sys
 import time
 
-# ======================== Configuration ========================
+# 准备
 python_exe = r'D:/Softwares/Anaconda3/envs/geo/python.exe'
 project_src = r'F:\PyProJect\dry_hot_valley\Src\preprocessing'
+data_base = r'G:\GeoProjects\dry_hot_valley'
 
 # 各步骤脚本路径
 step0_script = os.path.join(project_src, 'era5', 'era5_uv_preprocess.py')
@@ -34,7 +35,6 @@ step4_script = os.path.join(project_src, 'wind', 'windward_leeward_divide.py')
 
 # 是否强制全部重跑 (False = 跳过已存在的输出)
 force_rerun = False
-# ================================================================
 
 
 def run_python_script(script_path, description):
@@ -74,28 +74,27 @@ def check_outputs_exist(file_patterns, description, dependencies=None):
 
 def get_step_outputs():
     """定义各步骤的预期输出文件列表"""
-    base = r'G:\GeoProjects\dry_hot_valley'
     levels = [500, 600, 700, 800]
 
     outputs = {
         0: (
-            [os.path.join(base, 'u_v', '0.25deg', f'{var}_{lev}hPa_0.25deg.tif')
+            [os.path.join(data_base, 'u_v', '0.25deg', f'{var}_{lev}hPa_0.25deg.tif')
              for var in ['u', 'v'] for lev in levels] +
-            [os.path.join(base, 'wind_direction', '0.25deg', f'wind_dir_{lev}hPa_0.25deg.tif')
+            [os.path.join(data_base, 'wind_direction', '0.25deg', f'wind_dir_{lev}hPa_0.25deg.tif')
              for lev in levels],
             'ERA5 0.25° u/v/wind_dir'
         ),
         1: (
-            [os.path.join(base, 'u_v', '10m', 'unmasked', f'{var}_{lev}hPa_10m.tif')
+            [os.path.join(data_base, 'u_v', '10m', 'unmasked', f'{var}_{lev}hPa_10m.tif')
              for var in ['u', 'v'] for lev in levels],
             '10m u/v unmasked'
         ),
         2: (
-            [os.path.join(base, 'wind_direction', '10m', f'wind_dir_{lev}hPa_10m.tif')
+            [os.path.join(data_base, 'wind_direction', '10m', f'wind_dir_{lev}hPa_10m.tif')
              for lev in levels],
             '10m wind direction'
         ),
-        3: ([os.path.join(base, 'wind_effect', 'wind_effect.tif')], 'wind_effect.tif'),
+        3: ([os.path.join(data_base, 'wind_effect', 'wind_effect.tif')], 'wind_effect.tif'),
         4: (
             [r'E:\GeoProjects\dry_hot_valley\GeoFactor\windward_leeward\windward_leeward.tif'],
             'windward_leeward.tif'

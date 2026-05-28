@@ -19,15 +19,13 @@
 from __future__ import annotations
 
 import os
-import re
 from pathlib import Path
+import re
 
 import geopandas as gpd
 import pandas as pd
 
-# ============================================================
 # 0. Configuration
-# ============================================================
 NATIONAL_RIVER_PATH = Path(r"E:\GeoProjects\dry_hot_valley\river_net\river-1j.shp")
 XINAN_BOUNDARY_PATH = Path(r"E:\GeoProjects\dry_hot_valley\valley_area\Xinan\Xinan.shp")
 VALLEY_AREA_DIR = Path(r"E:\GeoProjects\dry_hot_valley\valley_area\Chuanxi")
@@ -72,10 +70,9 @@ ENCODING = "UTF-8"
 FORCE_RERUN = True
 
 
-# ============================================================
 # 1. Helpers
-# ============================================================
 def remove_shapefile(path: Path) -> None:
+    """删除指定路径的 shapefile 及其附属文件"""
     for ext in (".shp", ".shx", ".dbf", ".prj", ".cpg", ".sbn", ".sbx", ".shp.xml"):
         sidecar = path.with_suffix(ext)
         if sidecar.exists():
@@ -83,18 +80,21 @@ def remove_shapefile(path: Path) -> None:
 
 
 def safe_filename(name: str) -> str:
+    """将名称字符串转换为安全的文件名，替换非法字符"""
     cleaned = re.sub(r'[\\/:*?"<>|]+', "_", str(name)).strip()
     cleaned = re.sub(r"\s+", "_", cleaned)
     return cleaned or "unnamed"
 
 
 def read_vector(path: Path) -> gpd.GeoDataFrame:
+    """读取矢量文件，文件不存在时抛出 FileNotFoundError"""
     if not path.exists():
         raise FileNotFoundError(path)
     return gpd.read_file(path)
 
 
 def find_river_name_column(rivers: gpd.GeoDataFrame) -> str:
+    """从字段列表中自动查找包含河流名称的文本字段，优先返回"名称"字段"""
     if "名称" in rivers.columns:
         return "名称"
     text_cols = [
@@ -111,6 +111,7 @@ def normalize_output_columns(
     name_col: str,
     output_name: str | None = None,
 ) -> gpd.GeoDataFrame:
+    """统一输出字段结构为 RiverName/Name/TARGET_FID/SrcID/SrcGB/SrcLevel/LenM，并计算长度"""
     out = gdf.copy()
     out["RiverName"] = out[name_col].astype(str)
     out["Name"] = output_name if output_name is not None else out["RiverName"]
@@ -125,6 +126,7 @@ def normalize_output_columns(
 
 
 def write_shapefile(gdf: gpd.GeoDataFrame, path: Path) -> None:
+    """写入 shapefile 并附带 UTF-8 编码的 .cpg 文件，已存在且非强制重跑时跳过"""
     path.parent.mkdir(parents=True, exist_ok=True)
     if FORCE_RERUN:
         remove_shapefile(path)
@@ -137,6 +139,7 @@ def write_shapefile(gdf: gpd.GeoDataFrame, path: Path) -> None:
 
 
 def length_summary(gdf: gpd.GeoDataFrame, name_col: str) -> pd.DataFrame:
+    """按河流名称分组统计河段数量和总长度，按长度降序排列"""
     work = gdf.copy()
     work["_length_m"] = work.geometry.length
     summary = (
@@ -149,10 +152,9 @@ def length_summary(gdf: gpd.GeoDataFrame, name_col: str) -> pd.DataFrame:
     return summary
 
 
-# ============================================================
 # 2. Main steps
-# ============================================================
 def extract_xinan_rivers(rivers: gpd.GeoDataFrame, xinan: gpd.GeoDataFrame) -> tuple[gpd.GeoDataFrame, str]:
+    """用西南地区边界裁剪全国河流数据，自动检测名称字段并返回裁剪结果"""
     name_col = find_river_name_column(rivers)
     xinan_in_river_crs = xinan.to_crs(rivers.crs)
     clipped = gpd.clip(rivers, xinan_in_river_crs, keep_geom_type=True)
@@ -163,6 +165,7 @@ def extract_xinan_rivers(rivers: gpd.GeoDataFrame, xinan: gpd.GeoDataFrame) -> t
 
 
 def write_by_name_outputs(xinan_rivers: gpd.GeoDataFrame, name_col: str) -> pd.DataFrame:
+    """将西南河流按名称字段拆分输出为单独 shapefile，同时输出西南全量河流和索引 CSV"""
     by_name = normalize_output_columns(xinan_rivers, name_col)
     write_shapefile(by_name, OUT_XINAN_RIVERS)
 
@@ -180,6 +183,15 @@ def write_by_name_outputs(xinan_rivers: gpd.GeoDataFrame, name_col: str) -> pd.D
 
 
 def write_valley_centerlines(xinan_rivers: gpd.GeoDataFrame, name_col: str) -> pd.DataFrame:
+    """提取四条干热河谷的河道中心线并输出 shapefile 和索引 CSV
+
+    按 VALLEY_CENTERLINES 配置逐河谷裁剪主河道，输出中心线 shapefile
+    并生成包含河谷、河道名称、段数和长度的汇总索引。
+
+    参数说明:
+        xinan_rivers: 西南地区河流 GeoDataFrame
+        name_col: 河流名称所在字段名
+    """
     rows = []
     for cfg in VALLEY_CENTERLINES:
         valley = read_vector(cfg["valley_path"]).to_crs(xinan_rivers.crs)
@@ -218,6 +230,7 @@ def write_valley_centerlines(xinan_rivers: gpd.GeoDataFrame, name_col: str) -> p
 
 
 def main() -> None:
+    """运行完整流程：提取西南河流 -> 按名称拆分 -> 提取河谷中心线"""
     print("=" * 72)
     print("Extract Xinan named rivers from national river dataset")
     print("=" * 72)

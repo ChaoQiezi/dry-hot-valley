@@ -88,11 +88,13 @@ def read_grid_info(path):
 
 
 def remove_if_exists(path):
+    """删除文件（如果存在），静默跳过不存在的路径"""
     if os.path.exists(path):
         os.remove(path)
 
 
 def warp_or_raise(out_path, in_path, options, description):
+    """执行 GDAL Warp 重投影/重采样，失败时抛出 RuntimeError"""
     ds = gdal.Warp(out_path, in_path, options=options)
     if ds is None:
         raise RuntimeError(f'{description} failed.')

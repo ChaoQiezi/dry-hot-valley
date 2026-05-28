@@ -2,7 +2,7 @@
 # @Time    : 2026/4/2
 # @Email   : chaoqiezi.one@qq.com
 # @Wechat  : GIS茄子
-# @FileName: era5_land_monthly.py
+# @FileName: era5_t2m_tp_monthly.py
 
 """
 This script is used to 将ERA5-Land的zip文件解压为nc文件, 并提取逐月的t2m和tp输出为GeoTIFF文件
@@ -22,13 +22,14 @@ ERA5-Land数据说明:
 后续使用ArcGIS Pro的模型构建器或QGIS的对齐栅格工具进行重投影和重采样
 """
 
+from glob import glob
 import os
 import sys
-from glob import glob
+
 import netCDF4 as nc
 import numpy as np
 
-from qiezi import write_tiff, extract_nodata_value
+from qiezi import extract_nodata_value, write_tiff
 from qiezi.common import zip2nc
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))

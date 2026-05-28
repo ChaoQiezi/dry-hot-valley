@@ -11,15 +11,16 @@ GLO-30 DEM/slope/aspect VRT 拼接 + 裁剪至西南地区外接矩形 (WGS84, ~
 输出: G:/GeoProjects/dry_hot_valley/geo_factor/{DEM,Slope,Aspect}/xinan/*_30m_geo_xinan_region.tif
 """
 
-import os
 from glob import glob
+import os
+
 from osgeo import gdal, gdalconst
 
 from qiezi.geo import build_overviews
 
 gdal.DontUseExceptions()
 
-# ======================== Configuration ========================
+# 准备
 in_root = r'I:\DataHub\GLO-30_DEM'
 out_root = r'G:\GeoProjects\dry_hot_valley\geo_factor'
 temp_vrt_dir = r'E:\MyTemp'
@@ -34,7 +35,6 @@ data_types = {
 }
 
 overwrite = True
-# ================================================================
 
 os.makedirs(temp_vrt_dir, exist_ok=True)
 

@@ -47,22 +47,23 @@ ps: MCD12Q1 LC_Prop1分类
 :_FillValue = -1B; // byte
 """
 
+import math
 import os
 import re
+import shutil
+import warnings
+from glob import glob
+
 import numpy as np
 import rasterio as rio
 from rasterio.windows import Window, from_bounds
-import math
 import rioxarray as rxr
-import xarray as xr
-from dask.distributed import Client, LocalCluster
-from dask.diagnostics import ProgressBar
-from glob import glob
 from scipy import stats
-import warnings
-import shutil
+import xarray as xr
+from dask.diagnostics import ProgressBar
+from dask.distributed import Client, LocalCluster
 
-from qiezi import img_reclass, extract_nodata_value, build_overviews
+from qiezi import build_overviews, extract_nodata_value, img_reclass
 
 
 # 准备
@@ -83,6 +84,7 @@ end_year = 2025
 
 
 def compute_mode_block(block, nodata):
+    """对多年土地覆盖块 (n_years, h, w) 逐像元计算众数，无效值和不合理值不参与计票"""
     # block参数
     n_years, bh, bw = block.shape
     n_pixels = bh * bw

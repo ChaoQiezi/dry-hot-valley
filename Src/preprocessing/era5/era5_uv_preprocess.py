@@ -2,7 +2,7 @@
 # @Time    : 2026/3/12 上午9:58
 # @Email   : chaoqiezi.one@qq.com
 # @Wechat  : GIS茄子
-# @FileName: era5_u_v_preprocess.py
+# @FileName: era5_uv_preprocess.py
 
 """
 This script is used to 将ERA5的zip文件解压为nc文件, 并对月均u和v分别求取加权平均后计算月均风向
@@ -20,17 +20,18 @@ v_weighted = sum(v_i * V_i) / sum(V_i), V_i = sqrt(u_i^2 + v_i^2) = 风速
 
 import os
 import sys
-import rasterio
-from rasterio.plot import show
+import zipfile
 from glob import glob
-from osgeo import gdal
+
 import netCDF4 as nc
 import numpy as np
-import zipfile  # 解压zip文件
+from osgeo import gdal
+import rasterio
+from rasterio.plot import show
 
 from qiezi import write_tiff
-from qiezi.stats import wind_direction_cal
 from qiezi.common import zip2nc
+from qiezi.stats import wind_direction_cal
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 if project_root not in sys.path:

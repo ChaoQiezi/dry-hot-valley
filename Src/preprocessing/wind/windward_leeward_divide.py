@@ -13,9 +13,20 @@ import os
 import shutil
 
 import numpy as np
+from qiezi.geo import build_overviews
 import rasterio as rio
 
-from qiezi.geo import build_overviews
+# 准备
+wind_effect_path = r'G:\GeoProjects\dry_hot_valley\wind_effect\wind_effect.tif'
+wind_dir_path = r'G:\GeoProjects\dry_hot_valley\wind_direction\10m\wind_dir_600hPa_10m.tif'
+slope_path = r'G:\GeoProjects\dry_hot_valley\geo_factor\Slope\xinan\slope_10m_proj_xinan_region.tif'
+out_path = r'E:\GeoProjects\dry_hot_valley\GeoFactor\windward_leeward\windward_leeward.tif'
+mirror_out_path = r'G:\GeoProjects\dry_hot_valley\windward_leeward\windward_leeward.tif'
+
+slope_threshold = 5.0
+neutral_tolerance = 1e-6
+saga_nodata = -99999.0
+chunks = 4096
 
 
 def raster_is_aligned(src, ref_shape, ref_crs, ref_transform):
@@ -31,18 +42,6 @@ def valid_float_block(block, extra_nodata=None):
 
 
 if __name__ == '__main__':
-    # Configuration
-    wind_effect_path = r'G:\GeoProjects\dry_hot_valley\wind_effect\wind_effect.tif'
-    wind_dir_path = r'G:\GeoProjects\dry_hot_valley\wind_direction\10m\wind_dir_600hPa_10m.tif'
-    slope_path = r'G:\GeoProjects\dry_hot_valley\geo_factor\Slope\xinan\slope_10m_proj_xinan_region.tif'
-    out_path = r'E:\GeoProjects\dry_hot_valley\GeoFactor\windward_leeward\windward_leeward.tif'
-    mirror_out_path = r'G:\GeoProjects\dry_hot_valley\windward_leeward\windward_leeward.tif'
-
-    slope_threshold = 5.0
-    neutral_tolerance = 1e-6
-    saga_nodata = -99999.0
-    chunks = 4096
-
     # 验证输入对齐
     with rio.open(wind_effect_path) as src:
         we_profile = src.profile.copy()

@@ -16,14 +16,14 @@ import rasterio as rio
 from qiezi.geo import build_overviews
 from qiezi.stats import wind_direction_cal as wdir_cal
 
+# 准备
+in_dir = r'G:\GeoProjects\dry_hot_valley\u_v\10m\unmasked'
+out_dir = r'G:\GeoProjects\dry_hot_valley\wind_direction\10m'
+pressure_levels = [500, 600, 700, 800]
+
+os.makedirs(out_dir, exist_ok=True)
+
 if __name__ == '__main__':
-    # Configuration
-    in_dir = r'G:\GeoProjects\dry_hot_valley\u_v\10m\unmasked'
-    out_dir = r'G:\GeoProjects\dry_hot_valley\wind_direction\10m'
-    pressure_levels = [500, 600, 700, 800]
-
-    os.makedirs(out_dir, exist_ok=True)
-
     for cur_pressure_level in pressure_levels:
         cur_u_path = os.path.join(in_dir, f'u_{cur_pressure_level:.0f}hPa_10m.tif')
         cur_v_path = os.path.join(in_dir, f'v_{cur_pressure_level:.0f}hPa_10m.tif')
