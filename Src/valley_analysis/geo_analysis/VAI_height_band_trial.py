@@ -1,3 +1,9 @@
+# @Author  : ChaoQiezi
+# @Time    : 2026/05/28
+# @Email   : chaoqiezi.one@qq.com
+# @Wechat  : GIS茄子
+# @FileName: VAI_height_band_trial.py
+
 # -*- coding: utf-8 -*-
 """
 岷江单河谷的相对河床高程分层 VAI 试验。
@@ -9,9 +15,8 @@
 3. 仅生成试验产物，不覆盖现有主线 VAI 栅格。
 
 重要限制:
-- 旧的 centerline_final.shp 当前不在磁盘布局中。本试验将现存西南河网
-  river_net.shp 与岷江 polygon 相交后得到的河段作为临时河道基准。
-- 因此本脚本结果只能用于检验方法方向，不能直接作为最终科学结果。
+- 本脚本仍是方法试验, 不覆盖现有主线 VAI 栅格。
+- 河道中心线使用总预处理脚本生成的岷江中心线, 不再在本脚本内部临时裁剪河网。
 """
 
 import os
@@ -39,9 +44,9 @@ plt.rcParams.update(
     }
 )
 
-# ============================================================
+
 # 0. Configuration: legacy Minjiang method trial only
-# ============================================================
+
 VALLEY_LABEL = "岷江"
 
 NDVI_PATH = (
@@ -56,16 +61,17 @@ DIRECTION_PATH = (
     r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\geo_factor"
     r"\windward_leeward_region.tif"
 )
-RIVER_NETWORK_PATH = r"E:\GeoProjects\dry_hot_valley\river_net\river_net.shp"
-VALLEY_POLYGON_PATH = (
-    r"E:\GeoProjects\dry_hot_valley\valley_area\Chuanxi\Minjiang_valley.shp"
+CENTERLINE_PATH = (
+    r"E:\GeoProjects\dry_hot_valley\river_net\xinan\valley_centerlines"
+    r"\Minjiang_centerline.shp"
 )
+CENTERLINE_NAME = "岷江干旱河谷"
 
 OUT_DIR = r"E:\MyTEMP\dry_hot_valley\height_band_trial\minjiang"
 OUT_CELLS = os.path.join(OUT_DIR, "VAI_height_band_cells.csv")
 OUT_SUMMARY = os.path.join(OUT_DIR, "VAI_height_band_summary.csv")
 OUT_PAIRED = os.path.join(OUT_DIR, "VAI_height_cap_paired_vs_full.csv")
-OUT_CHANNELS = os.path.join(OUT_DIR, "candidate_channel_segments.geojson")
+OUT_CHANNELS = os.path.join(OUT_DIR, "minjiang_centerline_segments.geojson")
 OUT_FIG = os.path.join(OUT_DIR, "VAI_height_band_diagnostic.png")
 
 GRID_SIZE_M = 3000
@@ -73,9 +79,6 @@ PIXEL_SIZE_M = 10
 GRID_PIXELS = GRID_SIZE_M // PIXEL_SIZE_M
 BUFFER_RADIUS_M = 4000
 
-# 西南河网已按汇流阈值提取。岷江 polygon 内仅有 grid_code=1/2 的五段河线；
-# 试验先保留全部交线段，以免仅保留最高级会截断河谷北段。
-MIN_GRID_CODE = 1
 CHANNEL_SAMPLE_STEP_M = 10
 
 WINDWARD_VAL = 1
@@ -104,10 +107,11 @@ N_BOOT = 1000
 RNG_SEED = 20260524
 
 
-# ============================================================
+
 # 1. Geometry and validation
-# ============================================================
+
 def validate_raster_alignment(paths):
+    """检查多个栅格是否具有相同形状、transform 和 CRS"""
     metadata = []
     for path in paths:
         with rio.open(path) as src:
@@ -117,30 +121,28 @@ def validate_raster_alignment(paths):
 
 
 def load_candidate_channel(raster_crs):
-    river = gpd.read_file(RIVER_NETWORK_PATH)
-    valley = gpd.read_file(VALLEY_POLYGON_PATH).to_crs(river.crs)
-    river = river[river["grid_code"] >= MIN_GRID_CODE].copy()
-    clipped = gpd.clip(river, valley[["geometry"]], keep_geom_type=True)
-    clipped = clipped[~clipped.geometry.is_empty].copy()
-    if clipped.empty:
-        raise RuntimeError("No river segments intersect the Minjiang polygon.")
+    """加载岷江中心线 shapefile 并投影到栅格 CRS"""
+    centerline = gpd.read_file(CENTERLINE_PATH)
+    if "Name" in centerline.columns:
+        centerline = centerline[centerline["Name"] == CENTERLINE_NAME].copy()
+    centerline = centerline[~centerline.geometry.is_empty].copy()
+    if centerline.empty:
+        raise RuntimeError("No Minjiang centerline segments found.")
 
+    clipped = centerline.to_crs(raster_crs)
     clipped["length_m"] = clipped.length
     os.makedirs(OUT_DIR, exist_ok=True)
     clipped.to_file(OUT_CHANNELS, driver="GeoJSON")
 
-    print("Candidate channel segments used in this trial:")
-    print(
-        clipped.groupby("grid_code")["length_m"]
-        .agg(["count", "sum"])
-        .round(1)
-        .to_string()
-    )
-    channel = unary_union(clipped.to_crs(raster_crs).geometry)
+    print("Minjiang centerline segments used in this trial:")
+    group_col = "RiverName" if "RiverName" in clipped.columns else "Name"
+    print(clipped.groupby(group_col)["length_m"].agg(["count", "sum"]).round(1).to_string())
+    channel = unary_union(clipped.geometry)
     return channel
 
 
 def iter_lines(geometry):
+    """递归遍历 MultiLineString/LineString，逐条 yield LineString"""
     if isinstance(geometry, LineString):
         yield geometry
     elif isinstance(geometry, MultiLineString):
@@ -151,6 +153,7 @@ def iter_lines(geometry):
 
 
 def build_channel_tree(channel_geometry, dem_path):
+    """沿河道中心线等距采样，构建 cKDTree 并提取 DEM 高程"""
     points = []
     for line in iter_lines(channel_geometry):
         distances = np.arange(0.0, line.length, CHANNEL_SAMPLE_STEP_M)
@@ -173,6 +176,7 @@ def build_channel_tree(channel_geometry, dem_path):
 
 
 def build_buffer_mask(channel_geometry, shape, transform):
+    """对河道几何做缓冲区并栅格化为二值掩膜"""
     buffer_geom = channel_geometry.buffer(BUFFER_RADIUS_M)
     return rasterize(
         [(mapping(buffer_geom), 1)],
@@ -183,10 +187,11 @@ def build_buffer_mask(channel_geometry, shape, transform):
     )
 
 
-# ============================================================
+
 # 2. Cell calculation
-# ============================================================
+
 def interval_mask(valid_mask, relative_height, interval_type, lo_m, hi_m):
+    """根据相对高程区间类型和上下限构建网格内像素掩膜"""
     if interval_type == "full":
         return valid_mask
     if interval_type == "cap":
@@ -202,6 +207,7 @@ def interval_mask(valid_mask, relative_height, interval_type, lo_m, hi_m):
 
 
 def calculate_vai(ndvi, dem, relative_height, direction, mask):
+    """在给定像素掩膜内计算 VAI 及相关统计量，返回 dict 或 None"""
     ww_mask = mask & (direction == WINDWARD_VAL)
     lw_mask = mask & (direction == LEEWARD_VAL)
     n_ww = int(ww_mask.sum())
@@ -235,6 +241,7 @@ def calculate_vai(ndvi, dem, relative_height, direction, mask):
 
 
 def calculate_cells(channel_geometry, channel_tree, channel_elevations):
+    """逐 3 km 网格、逐高程分层计算 VAI，返回汇总 DataFrame"""
     with rio.open(NDVI_PATH) as src_ndvi, rio.open(DEM_PATH) as src_dem, rio.open(
         DIRECTION_PATH
     ) as src_direction:
@@ -311,10 +318,11 @@ def calculate_cells(channel_geometry, channel_tree, channel_elevations):
     return pd.DataFrame(records)
 
 
-# ============================================================
+
 # 3. Summary and plot
-# ============================================================
+
 def bootstrap_median_ci(values, seed):
+    """bootstrap 估计中位数的 95% 置信区间"""
     values = np.asarray(values, dtype=np.float64)
     rng = np.random.default_rng(seed)
     samples = rng.choice(values, size=(N_BOOT, len(values)), replace=True)
@@ -323,6 +331,7 @@ def bootstrap_median_ci(values, seed):
 
 
 def summarize_cells(cells):
+    """按高程分层汇总 VAI 统计指标，输出摘要 DataFrame"""
     rows = []
     for idx, label in enumerate(HEIGHT_ORDER):
         group = cells[cells["height_class"] == label]
@@ -354,6 +363,7 @@ def summarize_cells(cells):
 
 
 def summarize_paired_caps(cells):
+    """配对比较各累计高程上限与全高度 buffer 的 VAI 差异"""
     baseline = cells[cells["height_class"] == "full_buffer"][
         ["grid_id", "VAI", "abs_VAI"]
     ].rename(columns={"VAI": "VAI_full", "abs_VAI": "abs_VAI_full"})
@@ -394,6 +404,7 @@ def summarize_paired_caps(cells):
 
 
 def plot_diagnostics(cells, summary, paired):
+    """绘制高程分层 VAI 方法试验的三面板诊断图"""
     cap_labels = ["full_buffer", *[f"cap_0_{height}m" for height in HEIGHT_CAPS_M]]
     band_labels = [label for label in HEIGHT_ORDER if label.startswith("band_")]
     band_tick_labels = {
@@ -456,16 +467,17 @@ def plot_diagnostics(cells, summary, paired):
     axes[2].set_title("C. 相对全高度增量")
     axes[2].grid(axis="y", alpha=0.3)
 
-    fig.suptitle("岷江相对河床高程分层 VAI 方法试验 (临时河道基准)", fontsize=12)
+    fig.suptitle("岷江相对河床高程分层 VAI 方法试验", fontsize=12)
     fig.tight_layout()
     fig.savefig(OUT_FIG, dpi=300)
     plt.close(fig)
 
 
-# ============================================================
+
 # 4. Main
-# ============================================================
+
 def main():
+    """执行岷江单河谷相对河床高程分层 VAI 试验的完整流程"""
     start = time.time()
     os.makedirs(OUT_DIR, exist_ok=True)
     validate_raster_alignment([NDVI_PATH, DEM_PATH, DIRECTION_PATH])

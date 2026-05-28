@@ -28,23 +28,21 @@ import warnings
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from matplotlib.colors import TwoSlopeNorm
 import numpy as np
 import pandas as pd
-import rasterio as rio
-import shapefile
-from matplotlib.colors import TwoSlopeNorm
 from pyproj import CRS, Transformer
+import rasterio as rio
 from rasterio.transform import xy
 from scipy.spatial import cKDTree
+import shapefile
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 warnings.filterwarnings("ignore")
 
-# ============================================================
 # 0. Configuration
-# ============================================================
 BASE = r"E:\GeoProjects\dry_hot_valley\valley_analysis"
-CENTERLINE_PATH = os.path.join(BASE, r"..\valley_area\river_net\centerline_final.shp")  # 已废弃, 各河谷使用独立中心线
+CENTERLINE_ROOT = r"E:\GeoProjects\dry_hot_valley\river_net\xinan\valley_centerlines"
 
 OUT_TABLE_DIR = os.path.join(BASE, r"..\Result\Table\altitude")
 OUT_CHART_DIR = os.path.join(BASE, r"..\Result\Chart\altitude")
@@ -61,6 +59,7 @@ VALLEY_CONFIGS = [
     {
         "label": "大渡河",
         "name_filter": "大渡河干旱河谷",
+        "centerline_path": os.path.join(CENTERLINE_ROOT, "Daduhe_centerline.shp"),
         "vai_path": os.path.join(BASE, r"Daduhe\VAI\VAI_3km_buffer.tif"),
         "dem3_path": os.path.join(BASE, r"Daduhe\VAI\DEM_3km_buffer.tif"),
         "frac_path": os.path.join(BASE, r"Daduhe\VAI\valley_fraction_3km_buffer.tif"),
@@ -70,6 +69,7 @@ VALLEY_CONFIGS = [
     {
         "label": "金沙江",
         "name_filter": "金沙江干旱河谷",
+        "centerline_path": os.path.join(CENTERLINE_ROOT, "Jinshajiang_centerline.shp"),
         "vai_path": os.path.join(BASE, r"Jinshajiang\VAI\VAI_3km_buffer.tif"),
         "dem3_path": os.path.join(BASE, r"Jinshajiang\VAI\DEM_3km_buffer.tif"),
         "frac_path": os.path.join(BASE, r"Jinshajiang\VAI\valley_fraction_3km_buffer.tif"),
@@ -79,7 +79,7 @@ VALLEY_CONFIGS = [
     {
         "label": "岷江",
         "name_filter": "岷江干旱河谷",
-        "centerline_path": os.path.join(BASE, r"Minjiang\geo_factor\Minjiang_centerline.shp"),
+        "centerline_path": os.path.join(CENTERLINE_ROOT, "Minjiang_centerline.shp"),
         "vai_path": os.path.join(BASE, r"Minjiang\VAI\VAI_3km_buffer.tif"),
         "dem3_path": os.path.join(BASE, r"Minjiang\VAI\DEM_3km_buffer.tif"),
         "frac_path": os.path.join(BASE, r"Minjiang\VAI\valley_fraction_3km_buffer.tif"),
@@ -89,6 +89,7 @@ VALLEY_CONFIGS = [
     {
         "label": "雅砻江",
         "name_filter": "雅砻江干旱河谷",
+        "centerline_path": os.path.join(CENTERLINE_ROOT, "Yalongjiang_centerline.shp"),
         "vai_path": os.path.join(BASE, r"Yalongjiang\VAI\VAI_3km_buffer.tif"),
         "dem3_path": os.path.join(BASE, r"Yalongjiang\VAI\DEM_3km_buffer.tif"),
         "frac_path": os.path.join(BASE, r"Yalongjiang\VAI\valley_fraction_3km_buffer.tif"),
@@ -134,10 +135,9 @@ plt.rcParams.update({
 })
 
 
-# ============================================================
 # 1. Geometry & loading (parameterized)
-# ============================================================
 def iter_parts(shape):
+    """从 pyshp shape 对象中逐段 yield 折线顶点坐标"""
     parts = list(shape.parts) + [len(shape.points)]
     for i in range(len(parts) - 1):
         pts = shape.points[parts[i]:parts[i + 1]]
@@ -146,6 +146,7 @@ def iter_parts(shape):
 
 
 def densify_polyline(points, step_m=CENTERLINE_SAMPLE_STEP_M):
+    """按指定步长加密折线，返回带累积距离的采样点列表"""
     rows = []
     cum_dist = 0.0
     for p0, p1 in zip(points[:-1], points[1:]):
@@ -166,6 +167,7 @@ def densify_polyline(points, step_m=CENTERLINE_SAMPLE_STEP_M):
 
 
 def get_centerline_crs(centerline_path):
+    """从中心线 shapefile 的 .prj 文件读取 CRS"""
     prj_path = Path(centerline_path).with_suffix(".prj")
     return CRS.from_wkt(prj_path.read_text(errors="ignore"))
 
@@ -274,7 +276,7 @@ def load_all_valleys(configs):
     for cfg in configs:
         label = cfg["label"]
         print(f"  Loading {label} ...")
-        centerline_path = cfg.get("centerline_path", CENTERLINE_PATH)
+        centerline_path = cfg["centerline_path"]
         centerline, parts = load_centerline(
             cfg["name_filter"], cfg["vai_path"], cfg["dem10_path"],
             centerline_path, label,
@@ -293,10 +295,9 @@ def load_all_valleys(configs):
     return combined, centerline_parts_all
 
 
-# ============================================================
 # 2. Binning, LOWESS, threshold
-# ============================================================
 def bin_stats(df, axis_col, bin_step):
+    """按指定轴列和步长分箱，统计各箱内 VAI 的均值、中位数、标准差等"""
     values = df[axis_col].to_numpy()
     if len(values) == 0:
         return pd.DataFrame()
@@ -327,6 +328,7 @@ def bin_stats(df, axis_col, bin_step):
 
 
 def lowess_cells(df, x_col, x_min=None, x_max=None, frac=LOWESS_FRAC):
+    """对 cell-level 数据执行 LOWESS 平滑，返回排序后的 (x, y) 平滑值"""
     valid = np.isfinite(df[x_col]) & np.isfinite(df["VAI"])
     if x_min is not None:
         valid &= df[x_col] >= x_min
@@ -346,6 +348,7 @@ def lowess_cells(df, x_col, x_min=None, x_max=None, frac=LOWESS_FRAC):
 
 
 def first_pos2neg_crossing(x, y):
+    """查找 LOWESS 曲线上 VAI 由正转负的第一个零穿越点海拔"""
     if len(x) < 2:
         return np.nan
     for i in range(len(x) - 1):
@@ -382,9 +385,7 @@ def bootstrap_threshold(df, axis_col, x_min=None, x_max=None,
     )
 
 
-# ============================================================
 # 3. Plot
-# ============================================================
 def plot_all_valleys(grid, abs_bin, rel_bin, combined_abs, combined_rel,
                      per_valley_results, centerline_parts_all):
     fig = plt.figure(figsize=(13, 9))
@@ -544,9 +545,7 @@ def plot_all_valleys(grid, abs_bin, rel_bin, combined_abs, combined_rel,
     plt.close(fig)
 
 
-# ============================================================
 # 4. Main
-# ============================================================
 if __name__ == "__main__":
     t_start = time.time()
     print("=" * 72)

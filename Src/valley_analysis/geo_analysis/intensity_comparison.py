@@ -9,10 +9,11 @@ This script is used to
 """
 
 import os
+import warnings
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import warnings
 warnings.filterwarnings('ignore')
 
 VALLEYS = {
@@ -79,9 +80,7 @@ OUT_PATH = os.path.join(OUT_DIR, 'Fig4_intensity_comparison.png')
 
 data = load_valley_data()
 
-# ============================================================
 # 计算各项指标(限制在高置信区间)
-# ============================================================
 metrics = {}
 for name, df in data.items():
     mask = ((df['elev_center'] >= HIGH_CONF_LOW) &
@@ -107,9 +106,7 @@ for name, df in data.items():
     print(f'{name}: |VAI|中位数={abs_vai_median:.1f}%, 振幅={amplitude:.1f}%, '
           f'极值海拔={elev_min:.0f}m')
 
-# ============================================================
 # 绘图: 2x2 柱状图
-# ============================================================
 fig, axes = plt.subplots(2, 2, figsize=(12, 8))
 
 valley_order = list(metrics.keys())

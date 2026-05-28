@@ -9,10 +9,13 @@ This script is used to
 """
 
 import os
+import warnings
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import warnings
+import piecewise_regression as pw
+
 warnings.filterwarnings('ignore')
 
 VALLEYS = {
@@ -34,6 +37,9 @@ os.makedirs(OUT_DIR, exist_ok=True)
 MIN_COUNT_PER_BIN = 30        # 每个海拔 bin 至少要有的网格数(剔除低样本噪声)
 HIGH_CONF_LOW = 1500          # 高置信海拔区间下界
 HIGH_CONF_HIGH = 4500         # 高置信海拔区间上界(再高积雪不对称污染信号)
+MAX_BREAKPOINTS = 2           # 限制最大断点数,防止过拟合
+
+OUT_PATH = os.path.join(OUT_DIR, 'Fig3_segmented_breakpoints.png')
 
 plt.rcParams.update({
     'font.sans-serif': ['SimHei', 'Microsoft YaHei', 'STHeiti', 'WenQuanYi Micro Hei',
@@ -67,89 +73,10 @@ def load_valley_data(min_count=MIN_COUNT_PER_BIN):
     return data
 
 
-# @Author  : ChaoQiezi
-# @Time    : 2026/5/5
-# @FileName: Fig3_segmented_breakpoints.py
-
-"""
-Fig 3: 四河 Segmented 分段回归断点估计
-- 用 piecewise-regression 包(Python 等价于 R 的 segmented)
-- ModelSelection 选 BIC 最优断点数(限制最大 2 个,防过拟合)
-- 输出每河断点位置 + 95% CI
-- 与 Fig 2 LOWESS 反转点交叉验证
-"""
-
-import os
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import piecewise_regression as pw
-import warnings
-
-warnings.filterwarnings('ignore')
-
-# ============================================================
-# Configuration
-# ============================================================
-VALLEYS = {
-    '岷江': r'E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\Result\Table\altitude\VAI_altitude_gradient.xlsx',
-    '大渡河': r'E:\GeoProjects\dry_hot_valley\valley_analysis\Daduhe\Result\Table\VAI_altitude_gradient.xlsx',
-    '金沙江': r'E:\GeoProjects\dry_hot_valley\valley_analysis\Jinshajiang\Result\Table\VAI_altitude_gradient.xlsx',
-    '雅砻江': r'E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\Result\Table\VAI_altitude_gradient.xlsx',
-}
-COLORS = {
-    '岷江': '#1B9E77',
-    '大渡河': '#D95F02',
-    '金沙江': '#7570B3',
-    '雅砻江': '#E7298A',
-}
-OUT_DIR = r'E:\GeoProjects\dry_hot_valley\Result\Chart\altitude'
-os.makedirs(OUT_DIR, exist_ok=True)
-OUT_PATH = os.path.join(OUT_DIR, 'Fig3_segmented_breakpoints.png')
-
-MIN_COUNT_PER_BIN = 30
-HIGH_CONF_LOW = 1500
-HIGH_CONF_HIGH = 4500
-MAX_BREAKPOINTS = 2  # 限制最大断点数,防止过拟合
-
-plt.rcParams.update({
-    'font.sans-serif': ['SimHei', 'Microsoft YaHei', 'STHeiti', 'WenQuanYi Micro Hei',
-                        'Noto Sans CJK SC', 'sans-serif'],
-    'font.family': 'sans-serif',
-    'axes.unicode_minus': False,
-    'font.size': 10,
-    'axes.linewidth': 0.8,
-    'axes.labelsize': 11,
-    'xtick.labelsize': 10,
-    'ytick.labelsize': 10,
-    'xtick.direction': 'in',
-    'ytick.direction': 'in',
-    'figure.dpi': 300,
-    'savefig.dpi': 600,
-    'savefig.bbox': 'tight',
-})
-
-
-# ============================================================
-# 1. 加载数据
-# ============================================================
-def load_valley_data(min_count=MIN_COUNT_PER_BIN):
-    data = {}
-    for name, path in VALLEYS.items():
-        df = pd.read_excel(path)
-        df = df[df['count'] >= min_count].reset_index(drop=True)
-        data[name] = df
-        print(f'{name}: {len(df)} bins kept (count >= {min_count}), '
-              f'elev range [{df["elev_center"].min():.0f}, {df["elev_center"].max():.0f}]')
-    return data
-
-
 data = load_valley_data()
 
 
-# ============================================================
-# 2. 对每河拟合 segmented 模型
-# ============================================================
+# Step 2: 对每河拟合 segmented 模型
 def fit_segmented(x, y, max_bp=MAX_BREAKPOINTS):
     """
     对一条河的 (x=elev, y=VAI) 序列做 segmented 拟合。
@@ -276,9 +203,7 @@ for name, df in data.items():
     except Exception as e:
         print(f'  拟合异常: {type(e).__name__}: {e}')
 
-# ============================================================
-# 3. 绘图: 2x2 子图,每条河一个
-# ============================================================
+# Step 3: 绘图 — 2x2 子图,每条河一个
 print('\n' + '=' * 60)
 print('绘图')
 print('=' * 60)
@@ -347,9 +272,7 @@ fig.savefig(OUT_PATH, dpi=600, bbox_inches='tight', pad_inches=0.1)
 print(f'\n[Fig 3] Saved: {OUT_PATH}')
 plt.show()
 
-# ============================================================
-# 4. 保存断点结果到 CSV
-# ============================================================
+# Step 4: 保存断点结果到 CSV
 seg_records = []
 for name, r in seg_results.items():
     rec = {

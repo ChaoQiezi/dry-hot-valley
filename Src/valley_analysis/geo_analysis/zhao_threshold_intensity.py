@@ -19,22 +19,20 @@ This script is used to 对齐赵导三句话的最小可行分析:
 
 import math
 import os
-import warnings
 from pathlib import Path
+import warnings
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import rasterio as rio
-import shapefile
 from rasterio.transform import xy
 from scipy.spatial import cKDTree
+import shapefile
 
 warnings.filterwarnings("ignore")
 
-# ============================================================
 # 0. Configuration
-# ============================================================
 BASE_DIR = Path(r"E:\GeoProjects\dry_hot_valley")
 CENTERLINE_PATH = BASE_DIR / "valley_area" / "river_net" / "centerline_final.shp"
 OUT_DIR = BASE_DIR / "Result" / "Chart" / "altitude"
@@ -95,9 +93,7 @@ plt.rcParams.update({
 })
 
 
-# ============================================================
 # 1. Geometry helpers
-# ============================================================
 def iter_parts(shape):
     """Yield polyline parts from a pyshp shape."""
     parts = list(shape.parts) + [len(shape.points)]
@@ -129,6 +125,7 @@ def densify_polyline(points, step_m=CENTERLINE_SAMPLE_STEP_M):
 
 
 def valid_raster_value(value, nodata):
+    """判断栅格采样值是否有效（有限、非 nodata、大于 0）"""
     if not math.isfinite(value):
         return False
     if nodata is not None and np.isclose(value, nodata, rtol=0, atol=1e25):
@@ -136,9 +133,7 @@ def valid_raster_value(value, nodata):
     return value > 0
 
 
-# ============================================================
 # 2. River baseline
-# ============================================================
 def load_centerline_samples(valley_name, cfg):
     """Read one valley's centerline, densify it, and sample river elevation."""
     valley_key = cfg["key"]
@@ -191,6 +186,7 @@ def load_centerline_samples(valley_name, cfg):
 
 
 def summarize_river_baseline(centerline_samples):
+    """汇总各河谷中心线 DEM 采样结果，输出河道海拔基准统计表"""
     rows = []
     for valley_name, df in centerline_samples.items():
         z = df["river_dem_m"].to_numpy()
@@ -217,9 +213,7 @@ def summarize_river_baseline(centerline_samples):
     return out
 
 
-# ============================================================
 # 3. 3 km grid cells
-# ============================================================
 def load_grid_cells(valley_name, cfg, river_samples):
     """Load valid 3 km VAI cells and attach nearest river elevation."""
     valley_key = cfg["key"]
@@ -264,6 +258,7 @@ def load_grid_cells(valley_name, cfg, river_samples):
 
 
 def summarize_grid_intensity(grid_cells):
+    """按河谷汇总 3 km 网格的 VAI 强度指标，输出 CSV"""
     rows = []
     for valley_name, grid in grid_cells.items():
         df = grid[grid["high_conf_elev"]].copy()
@@ -296,6 +291,7 @@ def summarize_grid_intensity(grid_cells):
 
 
 def summarize_segment_intensity(grid_cells):
+    """按 30 km 河段汇总 VAI 强度，区分强弱河段并输出 CSV"""
     records = []
     for valley_name, grid in grid_cells.items():
         df = grid[grid["high_conf_elev"] & grid["near_river"]].copy()
@@ -401,10 +397,9 @@ def plot_segment_intensity(segment):
     return out_path
 
 
-# ============================================================
 # 4. Threshold height summary
-# ============================================================
 def summarize_threshold_heights(river_baseline, grid_cells):
+    """将 LOWESS 反转海拔换算为相对河道/谷底高差，生成阈值高度汇总表"""
     reversal = pd.read_csv(OUT_DIR / "reversal_bootstrap_results.csv")
     segmented = pd.read_csv(OUT_DIR / "methods_forest_data.csv")
     segmented = segmented[segmented["method"].str.contains("Segmented", na=False)].copy()
@@ -473,9 +468,7 @@ def summarize_threshold_heights(river_baseline, grid_cells):
     return out, diff_df
 
 
-# ============================================================
 # 5. Main
-# ============================================================
 if __name__ == "__main__":
     print("=" * 70)
     print("Zhao task alignment: threshold height + intensity heterogeneity")

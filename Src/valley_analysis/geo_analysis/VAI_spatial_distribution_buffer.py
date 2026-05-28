@@ -16,23 +16,21 @@ import time
 import warnings
 
 import numpy as np
-import rasterio as rio
-import shapefile
 from pyproj import CRS, Transformer
+import rasterio as rio
 from rasterio.features import rasterize
 from rasterio.transform import from_origin
 from rasterio.windows import Window
 from scipy.stats import ttest_ind
+import shapefile
 from shapely.geometry import LineString
 from shapely.ops import unary_union
 
 warnings.filterwarnings("ignore")
 
-# ============================================================
 # 0. Configuration
-# ============================================================
 BASE = r"E:\GeoProjects\dry_hot_valley\valley_analysis"
-CENTERLINE_PATH = os.path.join(BASE, r"..\valley_area\river_net\centerline_final.shp")  # 已废弃, 各河谷使用独立中心线
+CENTERLINE_ROOT = r"E:\GeoProjects\dry_hot_valley\river_net\xinan\valley_centerlines"
 
 GRID_SIZE_M = 3000
 PIXEL_SIZE_M = 10
@@ -51,6 +49,7 @@ VALLEY_CONFIGS = [
     {
         "name_filter": "大渡河干旱河谷",
         "label": "大渡河",
+        "centerline_path": os.path.join(CENTERLINE_ROOT, "Daduhe_centerline.shp"),
         "ndvi_path": os.path.join(BASE, r"Daduhe\NDVI\Interannual\NDVI_interannual_mean_region.tif"),
         "direction_path": os.path.join(BASE, r"Daduhe\geo_factor\windward_leeward_region.tif"),
         "dem_path": os.path.join(BASE, r"Daduhe\geo_factor\elevation_10m_projected_region.tif"),
@@ -59,6 +58,7 @@ VALLEY_CONFIGS = [
     {
         "name_filter": "金沙江干旱河谷",
         "label": "金沙江",
+        "centerline_path": os.path.join(CENTERLINE_ROOT, "Jinshajiang_centerline.shp"),
         "ndvi_path": os.path.join(BASE, r"Jinshajiang\NDVI\Interannual\NDVI_interannual_mean_region.tif"),
         "direction_path": os.path.join(BASE, r"Jinshajiang\geo_factor\windward_leeward_region.tif"),
         "dem_path": os.path.join(BASE, r"Jinshajiang\geo_factor\elevation_10m_projected_region.tif"),
@@ -67,7 +67,7 @@ VALLEY_CONFIGS = [
     {
         "name_filter": "岷江干旱河谷",
         "label": "岷江",
-        "centerline_path": os.path.join(BASE, r"Minjiang\geo_factor\Minjiang_centerline.shp"),
+        "centerline_path": os.path.join(CENTERLINE_ROOT, "Minjiang_centerline.shp"),
         "ndvi_path": os.path.join(BASE, r"Minjiang\NDVI\Interannual\NDVI_interannual_mean_region.tif"),
         "direction_path": os.path.join(BASE, r"Minjiang\geo_factor\windward_leeward_region.tif"),
         "dem_path": os.path.join(BASE, r"Minjiang\geo_factor\elevation_10m_projected_region.tif"),
@@ -76,6 +76,7 @@ VALLEY_CONFIGS = [
     {
         "name_filter": "雅砻江干旱河谷",
         "label": "雅砻江",
+        "centerline_path": os.path.join(CENTERLINE_ROOT, "Yalongjiang_centerline.shp"),
         "ndvi_path": os.path.join(BASE, r"Yalongjiang\NDVI\Interannual\NDVI_interannual_mean_region.tif"),
         "direction_path": os.path.join(BASE, r"Yalongjiang\geo_factor\windward_leeward_region.tif"),
         "dem_path": os.path.join(BASE, r"Yalongjiang\geo_factor\elevation_10m_projected_region.tif"),
@@ -84,10 +85,9 @@ VALLEY_CONFIGS = [
 ]
 
 
-# ============================================================
 # 1. Helpers
-# ============================================================
 def iter_parts(shape):
+    """从 pyshp shape 对象中逐段 yield 折线顶点坐标"""
     parts = list(shape.parts) + [len(shape.points)]
     for i in range(len(parts) - 1):
         pts = shape.points[parts[i]:parts[i + 1]]
@@ -96,6 +96,7 @@ def iter_parts(shape):
 
 
 def load_centerline_lines(shp_path, name_filter, dst_crs):
+    """读取指定河谷的中心线 shapefile，投影到目标 CRS，返回 LineString 列表"""
     prj_path = os.path.splitext(shp_path)[0] + ".prj"
     with open(prj_path, "r", errors="ignore") as f:
         src_crs = CRS.from_wkt(f.read())
@@ -119,6 +120,7 @@ def load_centerline_lines(shp_path, name_filter, dst_crs):
 
 
 def build_buffer_mask_10m(lines, buffer_m, ref_height, ref_width, ref_transform):
+    """对 LineStrings 并集做缓冲区并栅格化为 10 m 二值掩膜"""
     union_buffered = unary_union(lines).buffer(buffer_m)
     geom = union_buffered.__geo_interface__
     mask = rasterize(
@@ -131,10 +133,16 @@ def build_buffer_mask_10m(lines, buffer_m, ref_height, ref_width, ref_transform)
     return mask
 
 
-# ============================================================
 # 2. Per-valley processor
-# ============================================================
 def process_valley(cfg):
+    """处理单个河谷的 4 km 河道 buffer 内 3 km 网格 VAI 计算
+    
+    对每个 3 km 网格分别统计迎风坡/背风坡 NDVI 均值，计算 VAI、p 值并输出栅格。
+    参数:
+    cfg: 河谷配置字典，包含 label, ndvi_path, direction_path, dem_path, out_dir 等
+    返回:
+    dict: 包含 label, valid_count, elapsed_min, n_total_grids 的结果汇总
+    """
     label = cfg["label"]
     ndvi_path = cfg["ndvi_path"]
     direction_path = cfg["direction_path"]
@@ -169,7 +177,7 @@ def process_valley(cfg):
     with rio.open(direction_path, "r") as src:
         dir_nodata = src.nodata
 
-    centerline_path = cfg.get("centerline_path", CENTERLINE_PATH)
+    centerline_path = cfg["centerline_path"]
     print(f"  Centerline: {centerline_path}, filter={name_filter!r}")
     lines = load_centerline_lines(centerline_path, name_filter, ref_crs)
     print(f"  Centerline parts: {len(lines)}")
@@ -325,9 +333,7 @@ def process_valley(cfg):
     }
 
 
-# ============================================================
 # 3. Main
-# ============================================================
 if __name__ == "__main__":
     t_all = time.time()
     print("=" * 60)

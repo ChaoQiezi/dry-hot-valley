@@ -9,10 +9,12 @@ This script is used to
 """
 
 import os
+import warnings
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import warnings
+from statsmodels.nonparametric.smoothers_lowess import lowess
 warnings.filterwarnings('ignore')
 
 VALLEYS = {
@@ -75,8 +77,6 @@ Fig 2: 四河反转点 Bootstrap CI + Forest Plot
 - Forest plot 可视化
 """
 
-from statsmodels.nonparametric.smoothers_lowess import lowess
-
 OUT_PATH = os.path.join(OUT_DIR, 'Fig2_reversal_bootstrap_forest.png')
 N_BOOTSTRAP = 1000
 
@@ -112,9 +112,7 @@ def bootstrap_reversal(elev, vai, n_boot=N_BOOTSTRAP, x_range=(HIGH_CONF_LOW, HI
     return np.array(crossings_boot)
 
 
-# ============================================================
 # 对每条河做 bootstrap
-# ============================================================
 results = {}
 for name, df in data.items():
     elev = df['elev_center'].values
@@ -134,9 +132,7 @@ for name, df in data.items():
           f'[{results[name]["ci_low"]:.0f}, {results[name]["ci_high"]:.0f}], '
           f'n_valid = {results[name]["n_valid"]}/{N_BOOTSTRAP}')
 
-# ============================================================
 # Forest plot
-# ============================================================
 fig, ax = plt.subplots(figsize=(10, 5))
 
 valley_order = list(results.keys())

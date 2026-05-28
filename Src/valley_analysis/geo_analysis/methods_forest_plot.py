@@ -9,10 +9,11 @@ This script is used to
 """
 
 import os
+import warnings
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import warnings
 warnings.filterwarnings('ignore')
 
 VALLEYS = {
@@ -80,9 +81,7 @@ OUT_PATH = os.path.join(OUT_DIR, 'Fig5_methods_forest_plot.png')
 df_lowess = pd.read_csv(os.path.join(OUT_DIR, 'reversal_bootstrap_results.csv'))
 df_seg = pd.read_csv(os.path.join(OUT_DIR, 'segmented_breakpoints.csv'))
 
-# ============================================================
 # 整理数据
-# ============================================================
 methods_data = []
 for _, row in df_lowess.iterrows():
     methods_data.append({
@@ -128,9 +127,7 @@ forest_df = pd.DataFrame(methods_data)
 forest_df.to_csv(os.path.join(OUT_DIR, 'methods_forest_data.csv'),
                  index=False, encoding='utf-8-sig', float_format='%.1f')
 
-# ============================================================
 # 绘图
-# ============================================================
 fig, ax = plt.subplots(figsize=(11, 7))
 
 valley_order = ['岷江', '大渡河', '金沙江', '雅砻江']
