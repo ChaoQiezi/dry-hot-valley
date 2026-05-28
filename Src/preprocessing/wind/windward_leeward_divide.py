@@ -31,7 +31,7 @@ def valid_float_block(block, extra_nodata=None):
 
 
 if __name__ == '__main__':
-    # ======================== Configuration ========================
+    # Configuration
     wind_effect_path = r'G:\GeoProjects\dry_hot_valley\wind_effect\wind_effect.tif'
     wind_dir_path = r'G:\GeoProjects\dry_hot_valley\wind_direction\10m\wind_dir_600hPa_10m.tif'
     slope_path = r'G:\GeoProjects\dry_hot_valley\geo_factor\Slope\xinan\slope_10m_proj_xinan_region.tif'
@@ -42,7 +42,6 @@ if __name__ == '__main__':
     neutral_tolerance = 1e-6
     saga_nodata = -99999.0
     chunks = 4096
-    # ================================================================
 
     # 验证输入对齐
     with rio.open(wind_effect_path) as src:

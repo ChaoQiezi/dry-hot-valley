@@ -25,7 +25,7 @@ from osgeo import gdal, gdalconst
 
 from qiezi.geo import build_overviews
 
-# ======================== Configuration ========================
+# 准备
 saga_cmd = r'D:\Softwares\saga-9.11.3_msw\saga_cmd.exe'
 dem_100m_path = r'G:\GeoProjects\dry_hot_valley\geo_factor\DEM\xinan\elevation_100m_proj_xinan_region.tif'
 dem_10m_path = r'G:\GeoProjects\dry_hot_valley\geo_factor\DEM\xinan\elevation_10m_proj_xinan_region.tif'
@@ -40,7 +40,6 @@ max_dist = 300.0    # 搜索距离 [km]
 accel = 1.5         # 加速度因子
 chunks = 4096
 saga_nodata = -99999.0
-# ================================================================
 
 os.makedirs(wind_effect_dir, exist_ok=True)
 gdal.DontUseExceptions()
@@ -100,15 +99,11 @@ def warp_or_raise(out_path, in_path, options, description):
     ds = None
 
 
-# ================================================================
 # Step 0: 读取参考栅格参数 (100m DEM, 10m DEM)
-# ================================================================
 ref100 = read_grid_info(dem_100m_path)
 ref10 = read_grid_info(dem_10m_path)
 
-# ================================================================
 # Step 1: 风向 10m -> 100m 降采样 (与 100m DEM 严格对齐)
-# ================================================================
 if not os.path.exists(wind_dir_10m_path):
     raise FileNotFoundError(f'Wind direction not found: {wind_dir_10m_path}')
 
@@ -138,9 +133,7 @@ warp_options = gdal.WarpOptions(
 warp_or_raise(wind_dir_100m_tif, wind_dir_10m_path, warp_options, 'Downsample wind direction')
 print(f'  -> {wind_dir_100m_tif}')
 
-# ================================================================
 # Step 2: SAGA Wind Effect 计算 (100m GeoTIFF 直进直出)
-# ================================================================
 print('\n=== Step 2/3: Compute Wind Effect on 100m GeoTIFF grids ===')
 remove_if_exists(wind_effect_100m_tif)
 run_saga(
@@ -154,9 +147,7 @@ run_saga(
     'Wind Effect'
 )
 
-# ================================================================
 # Step 3: Wind Effect 100m -> 10m 回升 (与 10m DEM 严格对齐)
-# ================================================================
 print('\n=== Step 3/3: Upsample Wind Effect 100m -> 10m ===')
 remove_if_exists(wind_effect_10m_tif)
 print(f'  Input:  {wind_effect_100m_tif}')

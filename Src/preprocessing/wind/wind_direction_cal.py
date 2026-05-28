@@ -10,17 +10,17 @@ This script is used to 基于u和v计算风向(5-9月生长季均值)
 """
 
 import os
-import rasterio as rio
+
 import numpy as np
-from qiezi.stats import wind_direction_cal as wdir_cal
+import rasterio as rio
 from qiezi.geo import build_overviews
+from qiezi.stats import wind_direction_cal as wdir_cal
 
 if __name__ == '__main__':
-    # ======================== Configuration ========================
+    # Configuration
     in_dir = r'G:\GeoProjects\dry_hot_valley\u_v\10m\unmasked'
     out_dir = r'G:\GeoProjects\dry_hot_valley\wind_direction\10m'
     pressure_levels = [500, 600, 700, 800]
-    # ================================================================
 
     os.makedirs(out_dir, exist_ok=True)
 
