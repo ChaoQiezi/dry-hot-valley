@@ -34,8 +34,8 @@
 
 1. 关于时间尺度, 目前按照年尺度先进行研究;
 2. 对于已经下载的ALOS DEM数据集(大概率弃用), 虽然其标注了12.5m分辨率的数据集, 但是实际上对于中国及其其他大部分区域, 都是
-基于SRTM数据集的30m分辨率上采样得来的, 具体见官方文档:
-Assets/Ref/rtc_product_guide_v1.2.pdf; 因此实际上后续研究, 目前(2026/03/09)我们考虑的DEM数据集是使用GLO-30产品, 
+基于SRTM数据集的30m分辨率上采样得来的, 具体见官方文档(https://asf.alaska.edu/wp-content/uploads/2019/03/rtc_product_guide_v1.2.pdf):
+Assets/Ref/rtc_product_guide_v1.2.pdf; 因此实际上后续研究, 目前(2026/03/09)我们考虑的DEM数据集是使用GLO-30产品,
 从OpenTopography下载(搜索GLO-30即可): https://portal.opentopography.org/dataCatalog
 3. 基于GLO-30 DEM产品进行裁剪、掩膜和重采样(10m)以及表面参数计算, 得到DEM、坡度、坡向
 
@@ -53,22 +53,20 @@ Assets/Ref/rtc_product_guide_v1.2.pdf; 因此实际上后续研究, 目前(2026/
 # 2026/03/11 情况说明
 
 1. GAI(greenness asymmetric index, 绿度不对称指数), 公式为: GAI = NDVI_PFS / NDVI_EFS
-   [注: 2026-05-08 起 VAI 差值法取代 GAI 比值法; GAI 相关脚本已移至 History/]
 2. GDI(greenness difference index, 绿度差异指数), 公式为: GDI = (NDVI_EFS − NDVI_PFS)/(NDVI_EFS + NDVI_PFS).
 3. 目前可能还需要考虑一下是否针对川西地区所有地类进行? 还是只针对和植被相关的地类进行研究呢?
 
 
-# 2026/03/12 情况说明
+# 2026/3/12 情况说明
 
 1. 迎风坡和背风坡的划分
 
     目前搜集了相关文献, 已经确定使用SAGA GIS的Wind Effect(Windward, Leeward)风效应指数工具进行迎风坡和背风坡的划分
     - 使用数据包括: DEM、ERA5的600hPa(pressure level)的u, v风场数据;
     - 时间维度上的处理, 取多年生长季(6-8月)的u、v均值(基于风速加权), 计算风向数据, 进而计算风效应指数;
-      [注: 2026-05-16 起生长季已改为5-9月]
     - 空间尺度上的处理, 统一在10m分辨率、投影坐标系上计算风效应指数;
     - 迎风坡和背风坡划分, 根据SAGA GIS说明>1表示处在迎风区, <1表示背风区;
-    > The 'Wind Effect' is a dimensionless index. Values below 1 indicate wind shadowed areas whereas values above 1 
+    > The 'Wind Effect' is a dimensionless index. Values below 1 indicate wind shadowed areas whereas values above 1
     > indicate areas exposed to wind
 
     参考文献:
@@ -96,667 +94,461 @@ Assets/Ref/rtc_product_guide_v1.2.pdf; 因此实际上后续研究, 目前(2026/
 3. 如何聚合生长季的风向?
 4. 使用600hPa的u, v风场数据是否合适?
 
-1. 使用SAGA-GIS的wind effect工具计算风效应指数, 据此进行二分类
+1. 使用SAGA-GIS的wind effect工具计算风效应指数, 据此进行二分类(划分标准简陋)
 2. 首先是全年盛行风系不一致, 在夏季盛行的风系与冬季不一致, 导致计算出来的迎/背
    风坡也不准确;其次, 使用生长季的NDVI可以排除一些其他的干扰, 更好说明该年尺度
    的植被变化;
 3. 聚合方法考虑的是风速加权, 即根据风速对风向进行加权平均, 得到该生长季的风向;
-   [注: 最终实现见 Src/preprocessing/wind_direction_cal.py]
 
 
-2026/03/18 补充
+2026/3/18 情况说明
 
 1. 目前从gee上下载的NDVI, 存在2017-2018年的数据仅有少部分切片为有效值, 其余切片均为无效值;
 
 
-# 2026/03/19 情况说明
+# 2026/3/19 情况说明
 
-1. 关于2017-2018年的Sentinel-2 Level-2A SR数据大量缺失的问题, 实际上是由于
+1. 关于2017-2018年的Setinel-2 Level-2A SR数据大量缺失的问题, 实际上是由于
    欧空局在2018年3月26开始系统性为欧洲提供Level-2A SR数据集, 而对于全球来说
    目前来看至少在川西地区是2019年实现完全覆盖.
+   具体为:
+
+>The Sentinel-2 L2 data are downloaded from CDSE. They were computed by running sen2cor. WARNING: 2017-2018 L2 coverage in the EE collection is not yet global.
+>New core product (Level-2A surface reflectance)
+
+>generated and distributed since 26 March 2018 for
+>Europe.
+>Sentinel-2 Mission Status
+>Example of Level-2A surface reflectance versus Level-1C (top-of-atmosphere)
+>Copyright: Contains modified Copernicus Sentinel data (2018)
+
+参考见:
+   - Assets/Ref/1-sentinel-2_mission_status_and_dias_overview_v1_gascon_20181009.pdf)
+   - https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S2_SR_HARMONIZED?hl=zh-cn#description
+
 
 解决措施:
 
    目前来看需要调整时间尺度的范围, 调整为2019年-2025年
-   
+
 2. 此外，基于目前的的迎/背风坡的划分, 发现迎风坡所处区域的NDVI大都较小,
    而背风坡所处区域的NDVI大都较大.
-   
+
    - 可能是由于海拔跨度比较大, 高山(>5000m)虽然作为迎风坡但是海拔过高气温较低因此NDVI较低;
    - 可能是由于使用的风场数据是600hPa, 或许应该是使用u10和v10, 或者应该进一步进行文献调研了解wind effect工具传入的风场数据;
 
 
-# 2026/03/23 情况说明(组会总结)
+# 2026/3/23 情况说明(组会总结)
 
 1. 完成情况:
+
    - 完成迎风坡和背风坡的划分(基于Wind Effect风效应指数)
    - 完成NDVI的下载(2017年-2025年)
 
 2. 老师建议(仅参考)
+
    - 考虑引入雨季前后的对比;
    - 进行垂直梯度的对比分析时, 200m的海拔梯度跨度过大, 应设置更小例如50m;
    - 对于NDVI分析, 分析部分年份也可, 例如2019年-2025年, 前面的2017-2018年考虑丢弃;
 
 
-# 2026/03/25 情况说明
+# 2026/3/25 情况说明
 
-1. 目前已经将从GEE-Drive下载的NDVI数据集进行预处理;
-2. 今天要完成的是空间尺度上的分析: 
+1. 目前已经将从GEE-Drive下载的NDVI数据集进行预处理(但是小于0.1的NDVI设置为nan没有处理);
+2. 今天要完成的是空间尺度上的分析:
+
    - 年均值空间分布图(年聚合使用max);
    - 年际均值空间分布图(年际聚合使用mean);
    - 空间分布图轴边记录纬度上的NDVI变化;
 
+![空间分布+纬度变化](Assets/Ref/chart_literature/spatial_latitude.png)
 
-# 2026/03/28 情况说明
 
-1. 目前已经完成了NDVI年尺度的时间序列变化的绘制 (Mann-Kendall: no trend, p=1.0)
+# 2026/3/28 情况说明
+
+1. 目前已经完成了NDVI年尺度的时间序列变化的绘制;
+
+> --- Mann-Kendall Trend Test Results ---\
+> Trend direction : no trend\
+> p-value         : 1.0000\
+> Kendall tau (τ) : 0.0476\
+> Sen's Slope     : 0.000171  (95% CI: -0.003542 ~ 0.005848)\
+> Sen's Intercept : 0.7357\
+> Significant     : No ✗  (α = 0.05)\
+> Figure saved to: G:\GeoProjects\dry_hot_valley\Result\Chart\NDVI_time_series.png\
+
+![NDVI年尺度时间序列变化](Assets/Result/NDVI_time_series.png)
+
+
 2. 目前已经完成了NDVI年尺度的空间分布图的绘制;
-3. NDVI时间序列变化分析区分迎风坡和背风坡;
+
+![NDVI年尺度空间分布图](Assets/Result/NDVI_interannual_mean_spatial.png)
 
 
-# 2026/03/29 情况说明
+3. 关于1的NDVI时间序列变化, 没有区分迎风坡和背风坡, 此处仍是进行NDVI时间序列变化分析
+   但是区分迎风坡和背风坡.
+
+![迎/背风坡下NDVI时间序列变化](Assets/Result/NDVI_direction_time_series.png)
+
+
+# 2026/3/29 情况说明
 
 1. 目前正在处理不同海拔梯度下迎风坡和背风坡的NDVI统计值, 并绘制出图;
 
 
-# 2026/03/31 情况说明
+# 2026/3/31 情况说明
 
 1. 目前已经完成不同海拔梯度下迎风坡和背风坡的NDVI.
 
-2. 关于趋势分析, 发现2019-2025年期间的NDVI并不存在显著的趋势, 后续不往趋势方向进行分析;
+![不同海拔梯度下迎风坡和背风坡的NDVI](Assets/Result/NDVI_elevation_gradient.png)
 
-3. 关键发现:
-   - 在不同年份下, 背风坡NDVI均值 > 迎风坡NDVI均值(反常识)
-   - <4100m: 迎风坡NDVI > 背风坡NDVI
-   - 4100-5000m: 背风坡NDVI > 迎风坡NDVI
-   - >5000m: 两侧NDVI均 < 0.3
-   
-   推测: 4000-5000m范围背风坡NDVI占主导, 拉高了整体均值.
-   `ps`: 可能是高海拔裸地/冰雪像元被纳入了统计, 没有做好过滤
+2. 关于趋势分析, 前面的NDVI年尺度时间序列变化已经尝试绘制和表达,但是
+   发现2019-2025年期间的NDVI并不存在显著的趋势, 因此后续不往趋势方向进行分析;
 
-4. 进行土地利用类型(MCD12Q1)的预处理
+3. 目前迎风坡和背风坡不同年份下和不同海拔下的NDVI变化呈现看起来相反的状况:
 
+> 在不同年份下, 背风坡的NDVI均值都是大于迎风坡的NDVI均值(尽管反常识)\
+> 在<4100m的海拔区域, 迎风坡的NDVI均值大于背风坡的NDVI均值\
+> 在>4100m但小于5000m的海拔区域, 迎风坡的NDVI均值小于背风坡的NDVI均值
+> 在>5000m的海拔区域, 迎风坡和背风坡的NDVI均值均小于0.3;
 
-# 2026/04/01 情况说明
+4. 基于NDVI年际均值栅格, 分别计算迎风坡和背风坡的NDVI均值, 结果与3中不同年份下的结果一致;
 
-1. ERA5 2m气温 + 总降水量下载完成
-> 川西地区地理范围边界: 36°N, 96°E, 24°N, 106°E = 北, 西, 南, 东
-> [注: 2026-05-18 起扩展为西南地区, 见 Xinan.shp]
+通过上面的分析和绘制的图, 可以发现, 应该是4000m-5000m范围背风坡的NDVI大于迎风坡的NDVI, 且其占主导地位, 因此
+导致在不同年份下, 背风坡的NDVI均值大于迎风坡的NDVI均值.
 
-2. GAI 统计值处理完成 [注: GAI 后续被 VAI 取代]
-3. MCD12Q1 土地利用处理完成
+`ps`: 我觉得出现背风坡大于迎风坡的NDVI均值, 可能是由于没有做好过滤: 例如高海拔裸地/冰雪像元被纳入了迎风坡统计
 
 
-# 2026/04/02 情况说明
-
-1. 基于MCD12Q1的非植被像元掩膜过滤 (修改 ndvi_preprocess.py)
-2. DEM重分类(gradient=1000m)和空间分布可视化完成
+5. 进行土地利用类型(MCD12Q1)的预处理
 
 
-# 2026/04/08 组会总结
+# 2026/4/1 情况说明
 
-1. 当前的研究没有紧扣干热河谷这一主题, 过于发散
-2. 下一步: 先提取具体河谷(大渡河、雅砻江等), 限定研究区在河谷两侧山体;
-   河谷内部左右岸对比 + 风向因素
+1. 目前正在下载ERA5的2m气温数据集(temperature_2m)、总降水量数据集(total_precipitation)  --> 已完成
 
+> 今后规定, 川西地区的地理范围边界: 36°N, 96°E, 24°N, 106°E = 北, 西, 南, 东
 
-# 2026/04/09 情况说明
+2. 目前正在处理GAI的统计值, 并绘制出图;  --> 已完成[show_time.py](..%2FShowTime%2Fshow_time.py)
 
-1. 查阅干旱河谷划分文献, 关注成都生物所包维楷老师
-2. 聚焦干旱河谷, 引入河谷左右岸对比
-3. 获取中国西南干热河谷边界shp (国家青藏高原科学数据中心)
+3. 目前正在处理土地利用类型数据(MCD12Q1)  --> 已完成
 
 
-# 2026/04/10 情况说明
+# 2026/4/2 情况说明
 
-1. 河谷中心线提取; 两岸对比代码框架
-2. 方向矫正: 两岸对比应改为"左岸像元 vs 该山脉另一侧像元", 而非简单左右岸对应
+1. 目前正在为预处理添加一步过滤, 即基于MCD12Q1数据集进行非植被像元的掩膜过滤;
 
+ - 针对`ndvi_preprocess.py`中的`remove_invalid_values`函数进行修改
 
-# 2026/04/13 情况说明  [← 原 LOG 误标为 2026/3/13, 已修正]
-
-初步河谷分析框架:
-
-1. 河谷内侧/外侧划分: 通过河谷两侧山脊线提取边界
-2. 基于河谷内外侧在 3km×3km 格网进行 GAI 分析
-   [注: 后续切换到 VAI + buffer 4km, 网格思路保留]
-3. 四类像元 NDVI-海拔曲线: 河谷内迎风/背风 + 河谷外迎风/背风
-
-栅格编码: 十位=河谷(1大渡河/2岷江/3金沙江/4雅砻江), 个位=内外(1外侧/2内侧)
+2. 目前完成了DEM重分类(gradient=1000m)和空间分布可视化;
 
 
-# 2026/04/14 情况说明
+# 2026/4/8 组会总结
 
-1. 细化到干热河谷范围的分析完成: GAI空间分布 / NDVI海拔梯度 / NDVI年际变化
-2. 后续应全部聚焦干热河谷范围
+1. 当前的研究没有紧扣干热河谷这一主题进行研究, 过于发散
+2. 下一步研究方向
 
-
-# 2026/04/16 情况说明
-
-1. 三类图绘制完成: GAI空间分布 / NDVI海拔梯度 / NDVI年际变化
-2. 后续安排: 驱动因子分析 (空间自相关、GeoDetector、RF+SHAP等) + 文献调研
-
-
-# 2026/04/19 组会总结
-
-1. 明确科学问题, 讲好故事
-2. 先拿岷江试验 (区域完整、面积小, 快速验证)
+   - 地理单元划分: 建议先提取具体的河谷（如大渡河、雅砻江等）及流域范围，将研究区域限定在河谷两侧
+的山体上。
+   - 对比逻辑重构：在河谷内部，将左侧山体的像元与其对应的右侧山体像元进行比对，结合风向因素，分析
+河谷两侧植被的差异性。
 
 
-# 2026/04/21 情况说明
+# 2026/4/9 情况说明
 
-四个河谷子文件夹建立 (Daduhe, Jinshajiang, Minjiang, Yalongjiang).
-各河谷 unify_dataset.py 完成数据集空间统一.
-[注: 2026-05-16 起 unify_dataset.py 改为仅裁剪 windward_leeward, DEM/NDVI 已注释]
+1. 查阅 CNKI 上关于干旱河谷划分的文献，重点关注成都生物所 `包维楷老师` 的相关文章与划分标准。
+2. 调整研究方向，聚焦于干旱河谷区域，并引入河谷左右岸对比的分析方法。
 
-
-# 2026/05/05 情况说明
-
-1. valley_analysis 下完成四河 VAI 分析 (_region 外接矩形版):
-   vai_altitude_gradient.py, inverse_pt.py, segmented_breakpoints.py,
-   intensity_comparison.py, methods_forest_plot.py
-   [注: _region 版保留为 baseline, 后续 buffer 4km 版为主]
-2. 缺少 slope>5° 过滤 (05-08 补上)
+> 关键难点在于三方面:
+> 1. 如何获取得到川西地区的干热河谷区域?
+> - 是否可以直接网络检索得到各个河谷的边界shp文件
+> - 是否可以找到河谷划分的标准方法?
+> 2. 针对某一个河谷地区, 如何进行左右岸对比分析?
+> 3. 如何将河谷左右岸与迎风坡和背风坡耦合分析?
 
 
-# 2026/05/07 情况说明
-
-- 大渡河 buffer 4km: 543 cells, ABS 3530m, boot 99.8% → 确定为主线
-- strict polygon (Daduhe): 226 cells, boot 58.6% → 样本不足, 废弃
-  [注: strict/inner-outer/corridor trial 等已移至 History/]
-- CRS 变换 bug 修复 (岷江 Albers→UTM 47N)
-- TwoSlopeNorm vmin 兜底 (岷江 VAI 全部>0)
-- Buffer 推广至四河; Panel D 渲染 bug 链修复
+solve: 已经解决获取得到了中国西南地区干热河谷区域边界shp文件
+> https://www.msdc.ac.cn/#/datadetails?id=57
 
 
-# 2026/05/08 情况说明
+# 2026/4/10 情况说明
 
-- 四河合并: 2049 cells, ABS 3735m, REL 1406m
-- 文件重命名:
-  VAI_buffer_valley_3km_all.py → VAI_spatial_distribution_buffer.py
-  VAI_buffer_valley_threshold_all.py → VAI_altitude_gradient_buffer.py
-- slope>5° 过滤加入 windward_leeward_divide.py
-- slope>5° 版结果: ABS 3721m [3632, 3869], REL 1406m [1320, 1569]
-- ERA5 生长季代码改为 5-9 月 (仅代码, 数据待重跑)
-- 40+ 废弃文件移至 History/
+1. 今天主要需要完成的是两部分:
 
+   - 完成河谷中心线的提取;
+   - 初步的两岸对比代码框架;
 
-# 2026/05/16 情况说明
-
-windward_leeward_divide.py bug 修复:
-  - predictor=3→2 (uint8 需整数 predictor)
-  - block → 4096×4096 (16 倍数)
-  - 写入前 os.remove(out_path) (残留损坏文件导致 TIFFReadDirectory 报错, 第三次崩溃)
-
-生长季 5-9 月风场链重跑 (run_growing_season_pipeline.py):
-  Step 0→5: ERA5 nc → 0.25° u/v → 10m → DEM mask → wind_dir → 
-             SAGA Wind Effect → windward_leeward.tif
-
-4 × unify_dataset.py 改为仅裁剪 windward_leeward
-
-run_vai_buffer_pipeline.py 创建 (Step 1→3, Step 4 注释可选)
-
-管道运行结果:
-  Step 1: ~1.5 min, 4 × windward_leeward_region.tif
-  Step 2: ~0.5 min, Daduhe 583 / Jinsha 540 / Min 268 / Yalong 786 cells
-  Step 3: ~2.6 min, 合并 2019 cells; ABS 3652m [3573, 3757]; REL 1356m [1273, 1515]
+2. 方向矫正: 之前是直接河谷两岸的对应像元进行对比,但是实际上赵关于河谷方面的
+   对比是对于河谷左岸的像元, 应该与该像元所在山脉另外一侧对应的像元进行对比.
+   对于河谷右岸的像元, 也应该与该像元所在山脉另外一侧对应的像元进行对比.
 
 
-# 2026/05/17 组会 (赵伟导师)
+# 2026/3/13 情况说明
 
-汇报 05-16 结果. 赵老师核心反馈:
+目前基于河谷这个框架内算是有一个初步的想法了
 
-肯定: "做得挺好...可以直接重新定义整个干旱河谷的边界"
+1. 首先划分河谷内侧和河谷外侧
 
-方法学批评:
-  - "平均抵消效应": 3km 格网内谷底→山顶像元混合, VAI 被平滑
-  → 建议分高度带 VAI (距河道 200/300/400/500/1000m)
-  - 网格位置敏感性: 应测试 1km/2km/3km 多尺度
-  - 沿河段阈值空间分布制图
-  - 空间分布图去除人为边界
+   具体通过河谷两侧的山脊线提取河谷内侧和河谷外侧的边界;
 
-详见: Assets/Ref/group_meeting/2026-05-17_组会纪要.md
+2. 基于河谷内外侧在3km×3km格网进行GAI分析
+3. 基于海拔梯度和河谷内外侧进行NDVI随海拔变化分析: 河谷侧迎风坡、河谷侧背风坡、外侧迎风坡、外侧背风坡"四类像元分别随海拔的NDVI曲线
 
 
-# 2026/05/18 情况说明
-
-- 研究区扩展: 川西 → 西南地区 (Xinan.shp)
-  矩形: 上35.6°N / 下22.4°N / 左92.1°E / 右106.6°E
-- PROGRESS_2026-05-18.md 编写
-- LOG 文件夹重建: 旧 LOG 移至 LOG/LOG_legacy_2026-05-18.md 等; 本文件为修复版
+目前将获取的干热河谷边界数据作为河谷内侧, 对其进行2km缓冲(不含边界内部)得到河谷外侧.
+栅格值具体为:
+   十位数: 1: 大渡河干旱河谷, 2: 岷江干旱河谷, 3: 金沙江干旱河谷, 4: 雅磨江干旱河谷
+   个位数: 1: outer, 2: inner
 
 
-# 关键路径速查
+# 2026/4/14 情况说明
 
-| 类别 | 路径 |
+## 关于
+1. 目前已经完成(细化到干热河谷范围)
+
+   - GAI空间分布的分析
+   - NDVI海拔梯度变化的分析
+   - NDVI年际变化的分析
+
+## 后续应该都聚焦于干热河谷范围, 而不是整个川西地区, 否则就没有扣住研究主题
+
+
+# 2026/4/16 情况说明
+
+1. 目前已经基于4月14日分析数据进行图绘制, 包括三类:
+
+   - GAI空间分布图(mode="all", "inner", "outer"; ==> 表示3*3km格网所使用的像元限制)
+   - NDVI海拔梯度变化图(mode="combined", "valley_only", "wind_only"; ==> 表示指定海拔梯度范围内所使用的像元限制)  ==> 目前只绘制mode="combined"(因为其他两个模式没有进行分析<耗时长>)
+   - NDVI年际变化图(mode="combined", "valley_only", "wind_only"; ==> 均值计算所使用的像元限制)
+
+2. 后续安排
+   - 考虑分析驱动因子;  ==> (空间自相关分析 + 多因子贡献分析)
+     - 空间自相关: 皮尔逊系数/斯皮尔曼系数+偏相关
+     - 多因子贡献分析: GeoDetector, RF+SHAP, 偏相关+线性
+   - 完善目前或有的遗漏分析;
+   - 文献调研(基于目前的分析结果)
+
+
+# 2026/4/19 组会总结
+
+1. 明确实际要解决、要探索、要分析的科学问题，讲好这个故事;
+2. 。。。
+
+
+# 2026/4/19 心如死灰的总结
+
+1. 先拿岷江地区进行试验分析.(岷江在川西是完整的, 区域小好快速试验运行和验证)
+
+
+# 2026/5/5 情况说明
+
+1. 目前在valley_analysis下完成四条河谷的NDVI和VAI分析;
+2. 需要注意迎风坡和背风坡没有进行>5°的限制;
+
+
+# 2026/5/7 细节补充
+
+之前进行预处理、分析时遗留的问题:
+
+- 计算风向(Src/preprocessing/era5/era5_u_v_preprocess.py)时使用的是6-8月的生长季, 而非5-9月;
+- 在获取计算迎风坡背风坡(Src/preprocessing/windward_leeward_divide.py)时,没有进行坡度>5°的限制;
+- 后续进行VAI海拔梯度分布计算时, 使用_region即河谷的外接矩形范围, 包含了不包括河谷的区域;(Src/valley_analysis/*/preprocessing/unify_dataset.py)
+
+
+# 2026/5/18 情况说明
+
+- 更新下载的地理范围覆盖: 川西地区 --> 中国西南地区, 具体见E:\GeoProjects\dry_hot_valley\valley_area\Xinan\Xinan.shp
+
+> 中国西南地区的边界shp文件, 基于《西南地区干旱河谷分布范围及分区统计分析_范建容》及其
+> 干旱河谷边界(见https://www.msdc.ac.cn/#/datadetails?id=57), 与中国地级市边界进行相交分析得到.
+
+- 后续矩形范围统一使用:
+
+   上 35.6 deg
+   下 22.4 deg
+   左 92.1 deg
+   右 106.6 deg
+
+# 2026/5/19 DEM 预处理代码补齐
+
+1. 背景: 研究区从川西扩展到西南地区后, 之前 ArcGIS Pro 手动完成的 DEM 处理需要转为可复现脚本.
+2. 数据源: `I:\DataHub\GLO-30_DEM`, 共 6 个 GLO-30 DEM Tile, 覆盖 92.1°E-106.6°E.
+3. 新增 DEM 处理链:
+   - `Src/preprocessing/geo/unzip_dem.py`: 解压 DEM / Slope / Aspect;
+   - `Src/preprocessing/geo/dem_mosaic_clip.py`: VRT 拼接并按西南矩形范围裁剪;
+   - `Src/preprocessing/geo/dem_reproject_resample.py`: 投影到自定义 Albers, 重采样到 10m, 并从 10m DEM 重新计算坡度和坡向.
+4. 关键决定:
+   - 不再使用旧川西 UTM 47N, 改为适配西南地区的 Albers 等面积投影;
+   - 坡度/坡向从 10m 投影 DEM 重新计算, 避免直接重采样角度数据造成畸变;
+   - 输出放入 `G:\GeoProjects\dry_hot_valley\geo_factor\{DEM,Slope,Aspect}\xinan\`, 避免覆盖旧川西数据.
+5. 当日修复:
+   - docstring 中 `\xinan` 触发 `unicodeescape` 的问题;
+   - gdal.Warp 未设置 NoData 导致边界空值变 0 的问题;
+   - `DEMProcessingOptions` 中误写不存在参数的问题.
+
+
+# 2026/5/20 DEM 修复与 ERA5 风场代码适配
+
+1. DEM 处理脚本继续修正 NoData 传播: mosaic、warp 阶段均显式设置 `srcNodata/dstNodata=float('nan')`.
+2. ERA5 与 wind 脚本中的 DEM / Slope 参考路径改为西南 Albers 版本.
+3. `run_growing_season_pipeline.py` 移除 ERA5 DEM 掩膜步骤:
+   - 西南 DEM 已覆盖当前矩形范围, 额外掩膜价值不大;
+   - SAGA Wind Effect 后续本身只在 DEM 有效区域内计算;
+   - `era5_uv_mask.py` 保留为历史步骤, 但不再由主流程调用.
+4. 当前风场主流程调整为:
+
+```text
+ERA5 u/v 预处理 -> u/v 重投影到 10m -> wind_direction_cal.py -> saga_wind_effect.py -> windward_leeward_divide.py
+```
+
+5. 发现 BigTIFF 风险: 西南 10m 栅格超过 Classic TIFF 4GB 上限, rasterio 写出时必须显式设置 `bigtiff`.
+
+
+# 2026/5/21 BigTIFF 修正与 NDVI 预处理重写
+
+1. 修正 BigTIFF 拼写: rasterio profile 中应使用 `bigtiff`, 不是 `bigtif`.
+   涉及 `wind_direction_cal.py`, `windward_leeward_divide.py`, `ndvi_preprocess.py`.
+2. `ndvi_preprocess.py` 主要修改:
+   - DEM 参考路径改为西南 Albers 10m DEM;
+   - 输出目录改到 `E:\GeoProjects\dry_hot_valley\NDVI\Yearly\`, 便于下游分析读取;
+   - 输出文件名统一为 `NDVI_{year}.tif`;
+   - 增加 `force_rerun` 控制是否重跑.
+3. 处理逻辑从 rioxarray windowed 写出改为 rasterio 逐块读写:
+   - 先用 gdal.BuildVRT / gdal.Warp 完成镶嵌、重投影、重采样;
+   - 再逐块完成缩放 `* 0.0001` 与 `NDVI <= 0.1` 过滤;
+   - 避免 Windows 下 rioxarray 高频重开目标文件造成文件锁报错.
+4. 当日状态:
+   - DEM 预处理与 ERA5 Step 0-1 已完成;
+   - wind direction 因 BigTIFF 拼写问题需要重跑;
+   - NDVI 预处理代码已改完, 数据仍需继续跑完.
+
+
+# 2026/5/22 SAGA Wind Effect 降采样方案
+
+1. 问题: 西南地区 10m DEM 体量过大, SAGA Wind Effect 在 10m 上直接计算内存需求过高并崩溃.
+2. 处理方案:
+   - 在 `dem_reproject_resample.py` 中新增 10m -> 100m DEM 降采样;
+   - `saga_wind_effect.py` 改为 100m DEM + 100m wind direction 计算风效应;
+   - 计算完成后再将 wind effect 回升到 10m, 并严格对齐 10m DEM 的范围、尺寸和投影.
+3. 理由: ERA5 风向原始分辨率约 0.25°, 100m DEM 对该风场已经明显过采样, 用 100m 计算可以显著降低 SAGA 计算压力.
+4. 同步修复:
+   - `run_growing_season_pipeline.py` 移除旧的 SAGA 快捷导出逻辑;
+   - `windward_leeward_divide.py` 写出 uint8 西南栅格时增加 `bigtiff`;
+   - 写出前删除残留输出, 避免上次崩溃留下的损坏 TIFF 继续干扰.
+5. 结果: windward_leeward.tif 成功生成, 西南风场链条跑通.
+
+
+# 2026/5/22 河网提取
+
+由于研究区扩展为西南地区, 原 DEM 河网需要重新提取.
+
+基本步骤在 ArcGIS Pro 中完成:
+
+- 填洼;
+- 计算流向;
+- 计算累积流量;
+- 以累积流量阈值提取河网;
+- 河网分级;
+- 栅格河网矢量化.
+
+当前新逻辑: 不再只裁剪干热河谷范围内的 DEM 派生河网, 而是先按完整西南区域提取; 流量阈值暂设为 300000.
+
+
+# 2026/5/23 迎风坡/背风坡边界异常
+
+检查 `E:\GeoProjects\dry_hot_valley\GeoFactor\windward_leeward\windward_leeward.tif` 时发现左边界和上边界有连续异常值, 边缘区域几乎全部为 2 (背风坡).
+
+初步判断可能与 SAGA Wind Effect 或重采样边界处理有关. 先记录为待排查问题, 后续再决定是否裁剪边界缓冲区或追溯计算过程.
+
+
+# 2026/5/23 磁盘文件布局整理与路径统一
+
+1. 背景: E 盘速度快但空间有限, G 盘空间较大但较慢; 旧川西 UTM 数据和新西南 Albers 数据混在一起, 容易误用.
+2. 整理原则:
+   - E 盘保留当前分析热数据和结果;
+   - G 盘保留 DEM、ERA5、wind direction、wind effect 等大体量原始或中间数据;
+   - 旧川西 UTM 数据迁入 `G:\GeoProjects\dry_hot_valley_old\`, 保持原目录结构.
+3. 主要迁移:
+   - 清理 G 盘 NDVI 下载临时文件、旧 Yearly 中间产物、废弃 masked u/v;
+   - 旧 NDVI、旧 DEM、旧气候、旧河谷分析结果迁入 old;
+   - 四条河谷目录迁入 `E:\GeoProjects\dry_hot_valley\valley_analysis\`.
+4. 代码同步:
+   - 批量更新 valley_analysis 相关脚本路径, 从 `E:\...\{valley}\` 改为 `E:\...\valley_analysis\{valley}\`;
+   - 当前预处理代码指向 G 盘大数据路径, 分析代码指向 E 盘工作路径.
+5. 整理后遗留:
+   - 根目录 `geo_analysis\` 和 `plot\` 中部分旧川西脚本仍引用 old 路径, 暂不作为当前管道使用;
+   - windward_leeward.tif 边界异常仍待排查.
+
+
+# 2026/5/24 平均抵消效应单河谷试验 (岷江)
+
+1. 目的: 对 2026/05/17 组会提出的“3km 网格内谷底到山顶混合会平滑 VAI”进行初步验证.
+2. 新增试验脚本: `Src/valley_analysis/geo_analysis/VAI_height_band_trial.py`.
+3. 试验设置:
+   - 河道 buffer 保持 4km, 网格保持 3km;
+   - 在每个网格内部按相对河床高程计算 VAI;
+   - 同时比较累计高度帽 (`0-200/300/400/500/1000m`) 与互斥高度带.
+4. 岷江初步结果:
+   - `0-300/400/500m` 相对全高度聚合的 `|VAI|` 中位数有所增加;
+   - 低高度带 VAI 更强, 高高度带信号减弱;
+   - 当前更支持“高处弱信号稀释近河强信号”, 暂不宜表述为严格的“正负符号抵消”.
+5. 临时输出: `E:\MyTEMP\dry_hot_valley\height_band_trial\minjiang\`.
+6. 详细记录: `Assets/Ref/codex/PROGRESS_ANALYSIS_2026-05-24_HEIGHT_BAND_TRIAL.md`.
+
+
+# 2026/5/24 西南地区河流数据下载
+
+1. 问题: 通过 DEM 自动提取的河网仍需要和权威河流数据互相校验, 尤其是干热河谷分析依赖河道中心线质量.
+2. 数据源: 中国科学院资源环境科学与数据平台, 中国河流数据 (`https://www.resdc.cn/data.aspx?DATAID=221`).
+3. 下载结果: `E:\GeoProjects\dry_hot_valley\river_net\river-1j.shp`.
+4. 后续: 用该河流数据辅助筛选和核对研究河段, 不能直接替代河谷中心线人工/半自动检查.
+
+
+# 2026/5/28 迎风坡/背风坡边界异常深入排查
+
+1. 背景: `E:\GeoProjects\dry_hot_valley\GeoFactor\windward_leeward\windward_leeward.tif` 左边界和上边界出现连续异常, 边缘区域被分为 2 (背风坡). 当前已确认 ERA5 u/v 预处理曾把 ERA5 像元中心坐标误作为边界坐标, 导致 wind direction 相对 DEM 向右下偏移; 相关 ERA5 脚本已修复并正在重跑 `wind_direction_cal.py`.
+2. 本次排查结论:
+   - `-99999` 来源于 SAGA Wind Effect 输出. SAGA 中间头文件 `wind_effect.sgrd` 中写明 `NODATA_VALUE = -99999.000000;-99999.000000`, 不是 Python 中 `srcNodata=-99999` 生成的.
+   - 小样本验证表明 `gdal.Warp(srcNodata=-99999, dstNodata=NaN)` 可以正常把 SAGA 的 `-99999` 转为 `NaN`. 如果最终 `wind_effect.tif` 仍存在 `-99999`, 更可能是旧结果未被当前脚本完整覆盖、重跑链路不一致, 或输出文件覆盖失败.
+   - DEM 有效但 wind direction 无效时, SAGA 不会把输出设为 NoData, 而是产生中性风效应值 `wind_effect = 1.0`. 原二分类逻辑 `wind_effect > 1 -> 1`, `<= 1 -> 2` 会把这类中性条带误分为背风坡.
+   - SAGA 9.11.3 可直接读取 GeoTIFF 输入并输出 GeoTIFF, 当前 `.sgrd/.sdat` 中转不是必要步骤.
+3. 代码调整:
+   - `Src/preprocessing/wind/saga_wind_effect.py`: 去除 `.sgrd/.sdat` 导入导出中转, 改为 `DEM 100m GeoTIFF + wind_dir_100m GeoTIFF -> wind_effect_100m.tif`; SAGA 失败时立即抛错停止, 避免继续使用旧输出; 100m 回升到 10m 时保留 `srcNodata=-99999`, `dstNodata=NaN`; 删除末尾按 DEM/wind_dir 对 10m wind effect 整图再掩膜的逻辑, 避免对 60GB 级别栅格做重复 IO.
+   - `Src/preprocessing/wind/windward_leeward_divide.py`: 在最终二分类阶段统一处理有效区, 要求 `wind_effect` 有效、`wind_dir` 有效、`slope` 有效且 `slope > 5°`; 显式排除 `wind_effect == -99999`; 将近似 `wind_effect == 1.0` 的中性条带设为 255, 不再归入背风坡; 不额外读取 DEM, 避免冗余 IO.
+4. 验证情况:
+   - 已在 `E:\MyTEMP` 用小 GeoTIFF 验证 SAGA 可直接 `tif -> tif`, 且 `srcNodata=-99999 -> dstNodata=NaN` 生效.
+   - 已对两个修改脚本执行 `py_compile`, 语法通过.
+   - 尚未对完整 10m 大栅格重跑验证; 等当前 `wind_direction_cal.py` 完成后, 继续运行 `saga_wind_effect.py` 和 `windward_leeward_divide.py`.
+5. 后续检查:
+   - `saga_wind_effect.py` 完成后抽样确认 `wind_effect.tif` 中 `-99999` 数量应为 0 或仅存在于旧结果残留时才出现.
+   - `windward_leeward_divide.py` 完成后重点检查左边界、上边界: wind direction 无效条带应变为 255, 不应再连续归为 2.
+
+
+# 2026/5/28 河流中心线预处理抽象与岷江 VAI 前置整理
+
+1. 新增总预处理脚本 `Src/preprocessing/river/extract_xinan_rivers.py`:
+   - 输入全国河流数据 `E:\GeoProjects\dry_hot_valley\river_net\river-1j.shp`;
+   - 先按 `E:\GeoProjects\dry_hot_valley\valley_area\Xinan\Xinan.shp` 裁出西南河流;
+   - 再按全国河流数据中的“名称”字段输出单河道 shp;
+   - 最后按四条干热河谷 polygon 生成下游分析使用的中心线.
+2. 新产物:
+   - `E:\GeoProjects\dry_hot_valley\river_net\xinan\xinan_rivers.shp`;
+   - `E:\GeoProjects\dry_hot_valley\river_net\xinan\by_name\*.shp`;
+   - `E:\GeoProjects\dry_hot_valley\river_net\xinan\valley_centerlines\*_centerline.shp`.
+3. 已删除 `Src/valley_analysis/Minjiang/preprocessing/generate_centerline.py`, 避免在单河谷内部临时提取中心线.
+4. 已将 VAI buffer、VAI 海拔阈值和岷江高度分层试验脚本的中心线输入切换到总预处理产物.
+5. 详细梳理见 `Assets/Ref/codex/PRE_VAI_PIPELINE_ROADMAP_2026-05-28.md`.
+
+
+# 当前关键脚本
+
+| 任务 | 脚本 |
 |------|------|
-| 风场管道 | Src/preprocessing/run_growing_season_pipeline.py |
-| VAI管道 | Src/valley_analysis/run_vai_buffer_pipeline.py |
-| buffer VAI | Src/valley_analysis/geo_analysis/VAI_spatial_distribution_buffer.py |
-| 阈值+森林图 | Src/valley_analysis/geo_analysis/VAI_altitude_gradient_buffer.py |
-| ERA5 Step 0 | Src/preprocessing/era5/era5_uv_preprocess.py |
-| ERA5 Step 1 | Src/preprocessing/era5/era5_uv_reproject_to_10m.py |
-| 风向计算 | Src/preprocessing/wind/wind_direction_cal.py |
-| SAGA Wind Effect | Src/preprocessing/wind/saga_wind_effect.py |
-| 迎背风坡 | Src/preprocessing/wind/windward_leeward_divide.py |
-| 组会纪要 | Assets/Ref/group_meeting/2026-05-17_组会纪要.md |
-| 进展文档 | Assets/Ref/claude/PROGRESS_2026-05-18.md |
-| 废弃代码 | History/ |
-| DEM解压 | Src/preprocessing/geo/unzip_dem.py |
-| DEM拼接 | Src/preprocessing/geo/dem_mosaic_clip.py |
-| DEM投影+重采样 | Src/preprocessing/geo/dem_reproject_resample.py |
-
-
-# 2026/05/19 DEM 预处理代码编写
-
-GLO-30 DEM 数据已于 I:\DataHub\GLO-30_DEM 就位 (6 Tile, ~30 GB).
-现有 DEM 预处理全在 ArcGIS Pro 手动完成, 无代码留存, 故从头编写.
-
-## 数据源结构
-
-    I:\DataHub\GLO-30_DEM\
-    
-        ├── Tile1_92.1-94.6E_DEM.tar.gz    → output_hh.tif (Float32, ~1.6 GB)
-        
-        ├── Tile1_92.1-94.6E_Viz.tar.gz    → viz.hh_slope.tif + viz.hh_aspect.tif (~1.9 GB each)
-        
-        ├── ... (Tile2–Tile6, 覆盖 92.1°E–106.6°E)
-
-## 处理链条
-
-```
-unzip_dem.py  →  dem_mosaic_clip.py  →  dem_reproject_resample.py
- (解压)           (VRT拼接+裁剪 WGS84)     (投影Albers+10m+坡度坡向)
-```
-
-## 1. unzip_dem.py
-
-- 6 × Tile*_DEM.tar.gz → dem\Tile*_dem.tif
-- 6 × Tile*_Viz.tar.gz → slope\Tile*_slope.tif + aspect\Tile*_aspect.tif
-- 已存在跳过, 支持断点续传
-
-## 2. dem_mosaic_clip.py
-
-- VRT 拼接 (参考 mcd12q1_process.py) → gdal.Warp 裁剪
-- 西南地区外接矩形 [92.1, 22.4, 106.6, 35.6] (WGS84)
-- 仅矩形裁剪, 不掩膜 (region)
-- 输出: G:\GeoProjects\...\{DEM,Slope,Aspect}\xinan\*_30m_geo_xinan_region.tif
-- 同时处理 DEM / Slope / Aspect 三类数据
-
-## 3. dem_reproject_resample.py
-
-- 投影: 自定义 Albers 等面积圆锥投影
-  +proj=aea +lat_1=24 +lat_2=34 +lat_0=29 +lon_0=99.35 +datum=WGS84
-  (西南地区 92.1°E–106.6°E, 22.4°N–35.6°N 优化, 取代原川西 UTM 47N)
-- 重采样: 30m → 10m (Bilinear)
-- 坡度坡向: 直接从 10m 投影 DEM 用 gdaldem 计算 (避免 Viz 角度数据重采样畸变)
-- 输出: G:\GeoProjects\...\{DEM,Slope,Aspect}\xinan\*_10m_proj_xinan_region.tif
-
-## 关键决策
-
-| 决策 | 理由 |
-|------|------|
-| Albers 等面积 vs UTM | 西南地区跨 4 个 UTM 带 (45N–48N); 等面积适配后续格网统计 |
-| 自定义标准纬线 (24°/34°) | 比中国全国 Albers (25°/47°) 更贴合 22.4°N–35.6°N |
-| xinan 子文件夹 | 不覆盖旧川西 GLO-30/ 文件 |
-| 坡向坡度从 10m DEM 重算 | 避免 30m→10m 重采样对 0°/360° 角度数据引入插值畸变 |
-| build_overviews 金字塔 | 与 era5/ wind/ 脚本一致, 用 qiezi.geo.build_overviews |
-
-## Bug 修复记录
-
-| 问题 | 原因 | 修复 |
-|------|------|------|
-| SyntaxError: unicodeescape | docstring 中 `\xinan` 的 `\x` 被解析为十六进制转义 | docstring 改 raw string + 反斜杠改正斜杠 |
-| 边界无数据区填 0 | gdal.Warp 未设 dstNodata; 源文件本身无 NoData 元数据 | dstNodata=float('nan') |
-| DEMProcessingOptions TypeError | 捏造了 processing= 参数 (实际是 DEMProcessing() 的位置参数) | 移除 processing= |
-| NoData 传播断裂 | dem_reproject_resample.py Warp 未设 srcNodata/dstNodata | srcNodata=dstNodata=float('nan') |
-
-## 代码位置
-
-- Src/preprocessing/geo/unzip_dem.py
-- Src/preprocessing/geo/dem_mosaic_clip.py
-- Src/preprocessing/geo/dem_reproject_resample.py
-
-
-# 2026/05/20 DEM 预处理代码修复
-
-- NoData 链修复: 两脚本 gdal.Warp 均加 dstNodata=float('nan')
-- DEMProcessingOptions 移除不存在的 processing= 形参
-- 验证编译通过
-
-
-# 2026/05/20 ERA5 代码适配西南地区 DEM
-
-DEM 重复后（05-19），era5/ 和 wind/ 脚本中的硬编码路径失效，需更新。同时，西南地区
-范围远超原川西，两个架构问题暴露。
-
-## 1. DEM/Slope 路径更新 (5 文件)
-
-DEM 路径于 2026/05/19 更改为 xinan/ 子文件夹。5 个文件引用旧路径，已更新：
-
-| 文件 | 变量 | 旧路径 | 新路径 |
-|------|------|--------|--------|
-| era5_uv_preprocess.py | img_ref_path | ...\GLO-30\elevation_10m_projected.tif | ...\xinan\elevation_10m_proj_xinan_region.tif |
-| era5_uv_reproject_to_10m.py | ref_path | 同上，docstring UTM 47N | 同上，docstring Albers |
-| era5_uv_mask.py | ref_path | 同上 | 同上 |
-| saga_wind_effect.py | dem_path | 同上 | 同上 |
-| windward_leeward_divide.py | slope_path | E:\...\Slope\slope_10m_projected.tif | G:\...\Slope\xinan\slope_10m_proj_xinan_region.tif |
-
-未修改: era5_t2m_tp_monthly/yearly（ERA5-Land，无 DEM 引用）、wind_direction_cal.py（仅 u/v）。
-
-## 2. DEM 掩膜步骤废弃
-
-`era5_uv_mask.py`（原名 era5_u_v_postgis_preprocess.py）将 DEM NoData 区域对 u/v 做掩膜。
-西南地区 DEM 覆盖整个西南地区范围，无 NoData 空洞，掩膜不产生有价值结果。
-SAGA Wind Effect 仅处理 DEM 有效区域，DEM 自身已是天然掩膜。
-
-**变更:**
-- `run_growing_season_pipeline.py`: Step 2（掩膜）移除，Step 2–5 前移为 Step 2–4
-- `wind_direction_cal.py`: 输入从 masked/ 改回 unmasked/
-- `era5_uv_mask.py`: 保留但不再由管道调用
-
-管道现状（4 步）:
-```
-Step 0: era5_uv_preprocess.py       → 0.25° u/v/wind_dir
-Step 1: era5_uv_reproject_to_10m.py → 10m u/v unmasked
-Step 2: wind_direction_cal.py       → 10m wind_dir
-Step 3: saga_wind_effect.py         → wind_effect.tif
-Step 4: windward_leeward_divide.py  → 迎风/背风二分类
-```
-
-## 3. BigTIFF 问题
-
-西南地区 10m 栅格超 Classic TIFF 4GB 上限。gdal.Warp 通过 creationOptions 传入
-BIGTIFF=YES 正确处理；rasterio 的 profile.copy() 不继承 BigTIFF 标志，需显式设置
-`out_profile['bigtiff'] = 'YES'`。
-
-- wind_direction_cal.py: BIGTIFF 已设置 ✓
-- windward_leeward_divide.py: BIGTIFF 缺失 ✗（05-22 补上）
-
-注意: `BIGTIFF` 是两个 F — TIFF 本身就是 Tagged Image File Format。
-BIGTIFF 拼写统一应用于管道内所有 rasterio 写操作: wind_direction_cal.py、
-windward_leeward_divide.py、以及非管道脚本 ndvi_preprocess.py。
-
-
-# 2026/05/21 BigTIFF 拼写修正 + ndvi_preprocess.py 全面翻修
-
-## 1. BigTIFF 拼写: `bigtif` → `bigtiff` (双 F)
-
-05-20 在 `wind_direction_cal.py` 中写的 `out_profile['bigtif'] = True` 实际上是单 F。
-GDAL 的 creation option 是 `BIGTIFF`, 单 F 的 `BIGTIF` 不是有效选项名, 等同于没设。
-
-**修正:** 全项目 rasterio profile 统一为小写双 F: `'bigtiff': 'yes'`
-
-| 文件 | 旧写法 | 新写法 |
-|------|--------|--------|
-| wind_direction_cal.py | `'bigtif': True` ✗ | `'bigtiff': 'yes'` ✓ |
-| ndvi_preprocess.py | `'bigtiff': 'yes'` (原版) → `'bigtif': True` ✗ (误修改) | `'bigtiff': 'yes'` ✓ |
-| windward_leeward_divide.py | (缺失) ✗ | `'bigtiff': 'yes'` ✓ |
-| 4× ndvi_spatial_distribution_by_interannual.py | `"bigtiff": "yes"` ✓ | 无需修改 |
-
-注: gdal.Warp 的 creationOptions 字符串 `'BIGTIFF=YES'` (era5_uv_reproject_to_10m.py 等)
-是另一套 API, 不受此影响。
-
-## 2. ndvi_preprocess.py 全面翻修
-
-### 2.1 路径和配置修正
-
-| 变更项 | 旧值 | 新值 |
-|--------|------|------|
-| DEM ref_path | `GLO-30\elevation_10m_projected.tif` (UTM 川西) | `xinan\elevation_10m_proj_xinan_region.tif` (Albers 西南) |
-| 输出 out_dir | `G:\...\NDVI\Yearly\Temp\` | `E:\...\NDVI\Yearly\` (与下游 unify_dataset 等衔接) |
-| 死代码 | `ref_meta`, `ref_srs` (自定义 Albers 无 EPSG) | 已删除 |
-
-### 2.2 处理流程重写: 解决 rioxarray 竞态
-
-原始流程存在两处 rioxarray `to_raster(windowed=True)` 调用:
-- `warp_by_tiff` → `img_scale` (qiezi 包内, 比例缩放)
-- `remove_invalid_values` (NDVI<0.1 过滤)
-
-两处都在 Windows 上触发同一 bug:
-
-> rioxarray 的 `RasterioWriter` 在 `windowed=True` 时每写一个 chunk 就用
-> `"r+"` 模式重开目标文件。西南地区 10m 栅格 ~15 万×15 万像素, chunk 数千个,
-> 数千次 `open→write→close`。Windows 文件系统在高频重开同一文件时偶发锁未释放,
-> 报 `file used by other process`。
-
-**新流程 (纯 rasterio 逐块, 无 rioxarray):**
-
-```
-gdal.BuildVRT (镶嵌)
-  → gdal.Warp (重投影+重采样, Int16 无缩放)
-  → remove_invalid_values (缩放+过滤合一, 逐块 rasterio):
-      src.read → block.astype(Float32) * 0.0001 → where(>0.1) → dst.write
-  → build_overviews + compute_statistics
-```
-
-关键变化:
-- 移除 `warp_by_tiff` 的 `scale_factor` 参数 → 绕过 `img_scale` 的 rioxarray
-- `remove_invalid_values` 改为纯 rasterio 逐块读写 (同 `wind_direction_cal.py` 模式)
-  — 源文件打开一次, 目标文件打开一次 (`'w'` 模式), 遍历 block, 写完关闭
-- 缩放 (×0.0001) 与过滤 (≤0.1→NaN) 合并为一次 pass, 节省一次全栅格读写
-- 移除依赖: rioxarray, dask, ProgressBar, SerializableLock, Lock
-
-### 2.3 残留防护
-
-`remove_invalid_values` 写入前先 `os.remove(temp_path)` 清理上次崩溃可能遗留的 `_tmp_NDVI_{year}.tif`,
-用 temp→rename 模式原地替换源文件。
-
-### 2.4 其他
-
-- 输出文件名统一为 `NDVI_{year}.tif` (去除了旧版 `_valid` 后缀)
-- 用户侧新增 `force_rerun` flag
-
-## 3. wind_direction_cal.py Wind Direction 计算
-
-修复后重跑: 500hPa 成功, 600/700/800hPa 因 BigTIFF 单 F bug 失败。
-修正 `bigtiff` 拼写后待重跑。
-
-## 现状
-
-| 步骤 | 状态 |
-|------|------|
-| DEM 预处理 (解压→拼接→投影+降采样) | ✅ 完成 |
-| ERA5 风场 Step 0–1 (0.25° + 10m u/v) | ✅ 完成 (05-20) |
-| ERA5 风场 Step 2 (wind_dir 10m) | ⏳ BigTIFF 已修正, 待重跑 |
-| ERA5 风场 Step 3 (SAGA Wind Effect 100m) | ✅ 完成 (05-22) |
-| ERA5 风场 Step 4 (迎/背风二分类) | ✅ 完成 (05-22) |
-| NDVI 预处理 (ndvi_preprocess.py) | ⏳ 代码修完, 2019 年待重跑 |
-| NDVI 下载 (GEE) | ⏳ 2019 完成, 2020–2025 下载中 |
-| VAI Buffer 分析 | 依赖 windward_leeward + NDVI 完成 |
-
-
-# 2026/05/22 SAGA Wind Effect 100m 降采样
-
-西南地区 10m DEM ~206 亿像素, SAGA Wind Effect 向系统申请 85 GB 连续内存,
-指针崩溃 (0xC0000005)。48 GB 物理 RAM + 换页不足以满足此需求, 且即使可行,
-10m 逐像素射线追踪预计耗时数周。
-
-## 方案: 100m 降采样 + 回升
-
-ERA5 风向为 0.25° (~25 km), 100m DEM 已为 250 倍过采样, 不损失信息量。
-
-**dem_reproject_resample.py** — 新增 Step 2: 10m→100m 降采样 (GRA_Average),
-输出 `elevation_100m_proj_xinan_region.tif`。
-
-**saga_wind_effect.py** — 6 步重写:
-```
-Step 0: 读取 100m DEM / 10m DEM 参考参数 (width, height, outputBounds, dstSRS)
-Step 1: wind_dir 10m → 100m 降采样 (与 100m DEM 严格对齐)
-Step 2: 导入 DEM (100m) → SAGA
-Step 3: 导入 wind_dir (100m) → SAGA
-Step 4: Wind Effect 计算 (100m, ~30 分钟)
-Step 5: 导出 100m GeoTIFF
-Step 6: 回升 100m → 10m (outputBounds + width + height, 与 10m DEM 像素对齐)
-```
-
-## 空间对齐模式统一
-
-所有 gdal.Warp 调用统一为模式: 先读取参考栅格的 width/height/bounds/SRS,
-再传入 WarpOptions。era5_uv_reproject_to_10m.py 为此模式的原始模板。
-
-**run_growing_season_pipeline.py** — 移除 SAGA "智能导出"快捷方式 (仅导出 .sgrd→.tif,
-跳过回升步骤, 不再适用)。
-
-## BigTIFF: windward_leeward_divide.py
-
-uint8 西南地区 ~22 GB 未压缩, 写入时超 Classic TIFF 上限。
-`out_profile['bigtiff'] = 'yes'` + 写入前 `os.remove(out_path)` 清除上次残留。
-
-管道结束后 windward_leeward.tif 成功生成, 全链条跑通。
-
-
-# 2026/05/22 河网提取
-
-由于研究区域扩大为中国西南地区，因此河网提取的处理需要重新进行.
-
-基本步骤包括(均在ArcGIS Pro完成):
-
-    - 填洼
-    - 计算流向
-    - 计算累积流量
-    - 基于流量阈值截断, 提取河网
-    - 河网分级
-    - 栅格河网矢量化
-
-1. 旧逻辑(存在瑕疵)是进行河网提取后, 直接栅格河网矢量化, 同时裁剪只获取干热河谷(范等的数据)内的河网
-2. 新逻辑是按照上述步骤依次进行, 同时阈值设置为300000, 即提取流量大于等于300000的河网
-
-
-# 2026/05/23 磁盘文件布局整顿与代码路径统一
-
-## 1. 背景
-
-E盘 (SSD, 1TB) 速度快但空间有限; G盘 (HDD, 2TB) 大但慢。
-两盘文件重叠混乱, 旧川西 UTM 文件与西南 Albers 文件混杂。
-
-## 2. 存储策略
-
-| 盘 | 角色 | 存放内容 |
-|----|------|---------|
-| E (SSD) | 分析工作盘 | 小文件、热数据: NDVI 年数据、windward_leeward、VAI 结果、河谷分析 |
-| G (HDD) | 原始数据盘 | 大块头: DEM/Slope/Aspect、ERA5 u/v、wind_dir、wind_effect |
-| G:\..._old | 历史归档 | 旧 UTM 川西时代所有文件, 保持原始目录结构 |
-
-## 3. G 盘清理 (T1–T5)
-
-删除废弃文件, 旧 NDVI Yearly 迁至 old:
-
-| 操作 | 路径 | 大小 |
-|------|------|------|
-| 删除 | `NDVI\MyTemp\temp\` (GEE 下载碎片) | ~50 GB |
-| 删除 | `NDVI\Yearly\Temp\` (中间产物) | ~60 GB |
-| 删除 | `u_v\10m\masked\` (废弃掩膜步骤) | ~7 GB |
-| 迁移→old | `NDVI\Yearly\NDVI_2019~2025.tif` (旧 UTM) | ~147 GB |
-| 创建 | `G:\GeoProjects\dry_hot_valley_old\` | — |
-
-## 4. E 盘旧文件迁移至 old (T6–T18)
-
-以 2026-05-16 (西南扩展日期) 为分界线, 所有旧文件保持目录结构迁至 old:
-
-| 类别 | 内容 | 大小 |
-|------|------|------|
-| DEM | `GeoFactor\DEM\elevation_10m_projected*` (旧UTM DEM + valley裁剪) | ~43 GB |
-| NDVI | `NDVI\Interannual\NDVI_interannual_mean.tif` (旧UTM) | ~11 GB |
-| 表格 | `Output\Table\*` (旧分析产出) | <1 MB |
-| 气候 | `ERA5\t2m\*` + `ERA5\tp\*` (旧川西范围) | ~25 MB |
-| 河谷 | `valley_area\valley_chuanxi\*` (旧全川西) | ~150 MB |
-| 分析 | `Chuanxi\*` (旧全川西分析) | <1 MB |
-| GAI | 4 河谷 `GAI\` 目录 | <1 MB |
-| DEM | 4 河谷 `geo_factor\elevation_10m_projected_region*` (旧UTM裁剪) | ~13 GB |
-| NDVI | 4 河谷 `NDVI\Yearly\NDVI_*_region*` (旧UTM) | ~12 GB |
-| 结果 | 4 河谷 `Result\*` (旧图表表格) | <100 MB |
-| 其他 | `VAI\*_region/*_strict`, `GAI\`, `Slope\`, `landcover\`, `Slopeunits\`, `MXD\` 等 | ~36 GB |
-
-**E 盘效果**: 827 GB → 558 GB, 空闲 104 GB → 373 GB (+269 GB)
-
-## 5. 河谷目录归入 valley_analysis (T20)
-
-4 河谷从 E 盘根目录迁入 `valley_analysis\`:
-
-```
-E:\...\dry_hot_valley\                    E:\...\dry_hot_valley\
-├── Daduhe\                               ├── valley_analysis\
-├── Jinshajiang\                   →      │   ├── Daduhe\
-├── Minjiang\                             │   ├── Jinshajiang\
-└── Yalongjiang\                          │   ├── Minjiang\
-                                          │   └── Yalongjiang\
-```
-
-## 6. 代码路径批量更新 (T21)
-
-30 个脚本路径从 `E:\...\{valley}\` 更新为 `E:\...\valley_analysis\{valley}\`:
-
-受影响文件:
-- `valley_analysis\run_vai_buffer_pipeline.py` (动态路径 + 硬编码路径)
-- 4× `{valley}\preprocessing\unify_dataset.py` (out_dir)
-- 4× `{valley}\geo_analysis\ndvi_altitude_gradient.py`
-- 4× `{valley}\geo_analysis\ndvi_spatial_distribution_by_interannual.py`
-- 4× `{valley}\geo_analysis\VAI_altitude_gradient.py`
-- 4× `{valley}\geo_analysis\VAI_spatial_distribution.py`
-- 4× `{valley}\geo_analysis\VAI_spatial_distribution_buffer.py`
-- 4× `{valley}\plot\VAI_altitude_gradient.py`
-- `plot\VAI_combined_altitude_gradient.py`
-- `valley_analysis\geo_analysis\duplication.py`
-- `valley_analysis\geo_analysis\intensity_comparison.py`
-- `valley_analysis\geo_analysis\inverse_pt.py`
-- `valley_analysis\geo_analysis\methods_forest_plot.py`
-- `valley_analysis\geo_analysis\segmented_breakpoints.py`
-
-## 7. 最终磁盘布局
-
-```
-E:\GeoProjects\dry_hot_valley\          ← SSD 分析工作盘 (558 GB)
-├── NDVI\Yearly\                         NDVI_2019+2020 (Albers Float32)
-├── GeoFactor\windward_leeward\          windward_leeward.tif
-├── river_net\                           西南河网
-├── valley_area\Xinan\                   西南边界
-├── VAI\                                 全区域 VAI_3km
-├── Result\                              buffer 分析产出
-├── valley_analysis\                     4 河谷分析
-│   ├── Daduhe\    geo_factor\ + VAI\
-│   ├── Jinshajiang\
-│   ├── Minjiang\
-│   └── Yalongjiang\
-├── ERA5\                                (空, 脚本写入目标)
-└── Output\                              (空, 脚本写入目标)
-
-G:\GeoProjects\dry_hot_valley\          ← HDD 原始数据盘 (385 GB)
-├── geo_factor\DEM | Slope | Aspect\     西南 DEM (含 GLO-30 原始)
-├── u_v\10m\unmasked\                    ERA5 u/v 4 层
-├── wind_direction\10m\                  wind_dir 4 层
-├── wind_effect\                         SAGA Wind Effect
-├── windward_leeward\                    镜像备份
-├── landcover\                           MODIS
-└── region\                              Chuanxi.shp
-
-G:\GeoProjects\dry_hot_valley_old\      ← 历史归档 (~500 GB)
-    原始目录结构完整保留
-```
-
-## 8. 已知遗留
-
-- `geo_analysis\` 和 `plot\` 根目录旧脚本 (ndvi_mean_total.py, ndvi_altitude_analysis.py 等) 仍引用已迁至 old 的路径
-  → 这些是旧川西 UTM 脚本, 不在当前 valley_analysis 管道中
-- 代码路径问题 7 已解决, 预处理代码指向 G 盘路径正确 (原始数据在 G 盘)
-- windward_leeward.tif 左右边界异常 (05/23 记录) 待排查
-
-
-# 2026/05/24 平均抵消效应单河谷初步试验 (岷江)
-
-- 针对 2026/05/17 组会 A1, 新增方法试验脚本:
-  `Src/valley_analysis/geo_analysis/VAI_height_band_trial.py`
-- 试验定义: 保持 `4 km` 河道 buffer 与 `3 km` 网格, 在每个网格内部按逐像元
-  相对河床高程分别计算累计高度帽 VAI (`0-200/300/400/500/1000 m`) 和互斥高度带 VAI.
-- 输入范围: 使用已完整且空间对齐的岷江历史输入; 河道临时采用当前 `river_net.shp`
-  在岷江 polygon 内的 5 条交线段. 因中心线尚待人工核对, 本轮仅为方法验证.
-- 初步结果:
-  - 配对比较下, `0-300/400/500 m` 相对于全高度聚合的 `|VAI|` 中位增量分别为
-    `+3.05/+2.20/+1.48` 个百分点, bootstrap 95% CI 均大于 0.
-  - 互斥高度带 VAI 中位数从 `0-200 m` 的 `11.88%` 降至 `1000-1500 m`
-    的 `0.64%`, 但 `1500-2000 m` 仍为正值.
-  - 当前证据支持“高处弱信号稀释近河强信号”, 尚不支持在岷江表述为“正负符号抵消”.
-- 工程阻塞修正: 现行跨河谷 buffer 核心脚本仍引用迁移前路径且引用已缺失的
-  `centerline_final.shp`; 四个 `unify_dataset.py` 的迁移路径含控制字符, 均需在正式重跑前修复.
-- 详细记录: `Assets/Ref/codex/PROGRESS_ANALYSIS_2026-05-24_HEIGHT_BAND_TRIAL.md`
-- 临时输出: `E:\MyTEMP\dry_hot_valley\height_band_trial\minjiang\`
+| 生长季风场主流程 | `Src/preprocessing/run_growing_season_pipeline.py` |
+| DEM 预处理 | `Src/preprocessing/geo/unzip_dem.py`; `Src/preprocessing/geo/dem_mosaic_clip.py`; `Src/preprocessing/geo/dem_reproject_resample.py` |
+| ERA5 u/v 预处理 | `Src/preprocessing/era5/era5_uv_preprocess.py`; `Src/preprocessing/era5/era5_uv_reproject_to_10m.py` |
+| 风向与 Wind Effect | `Src/preprocessing/wind/wind_direction_cal.py`; `Src/preprocessing/wind/saga_wind_effect.py`; `Src/preprocessing/wind/windward_leeward_divide.py` |
+| NDVI 预处理 | `Src/preprocessing/ndvi_preprocess.py` |
+| 西南河流与中心线预处理 | `Src/preprocessing/river/extract_xinan_rivers.py` |
+| VAI buffer 管道 | `Src/valley_analysis/run_vai_buffer_pipeline.py` |
+| VAI 空间与海拔分析 | `Src/valley_analysis/geo_analysis/VAI_spatial_distribution_buffer.py`; `Src/valley_analysis/geo_analysis/VAI_altitude_gradient_buffer.py` |
