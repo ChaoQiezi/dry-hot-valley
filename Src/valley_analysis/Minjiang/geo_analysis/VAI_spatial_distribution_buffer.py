@@ -76,6 +76,7 @@ MIN_VALLEY_PIXELS = MIN_PIXEL_THRESHOLD * 2
 
 # 1. Helpers
 def iter_parts(shape):
+    """从 pyshp shape 对象中逐段 yield 折线顶点坐标"""
     parts = list(shape.parts) + [len(shape.points)]
     for i in range(len(parts) - 1):
         pts = shape.points[parts[i]:parts[i + 1]]

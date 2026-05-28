@@ -29,7 +29,7 @@ import numpy as np
 import pandas as pd
 import rioxarray as rxr
 
-# 0. Configuration
+# 准备
 # ndvi_path = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\NDVI\Interannual\NDVI_interannual_mean.tif"
 ndvi_dir = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\NDVI\Yearly"
 dem_path = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\geo_factor\elevation_10m_projected_region.tif"
@@ -37,6 +37,7 @@ aspect_path = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\geo_facto
 interannual_ndvi_path = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\NDVI\Interannual\NDVI_interannual_mean_region.tif"
 # out_path = r'E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\Result\Table\altitude\NDVI_elevation_gradient.xlsx'
 out_dir = r'E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\Result\Table\altitude'
+ndvi_wildcard = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\NDVI\Yearly\NDVI_*_region.tif"
 
 chunk_size = {'x': 4096, 'y': 4096}
 elev_step = 50  # 高程梯度间隔(m)
@@ -47,6 +48,7 @@ LEEWARD_VAL = 2
 
 
 def load_checkpoint(in_path):
+    """加载已计算的高程梯度断点续跑结果，返回已完成 bin 集合和 DataFrame"""
     if os.path.exists(in_path):
         df = pd.read_excel(in_path)
         done = set(df['elev_center'].values)
@@ -58,12 +60,21 @@ def load_checkpoint(in_path):
 
 
 def save_checkpoint(df, out_path) :
+    """保存当前高程梯度计算结果到 Excel，支持断点续跑"""
     df_sorted = df.sort_values('elev_center').reset_index(drop=True)
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     df_sorted.to_excel(out_path, index=False)
 
 
 def main(out_path, ndvi_path, dem_path, aspect_path):
+    """按 50 m 高程梯度统计迎风坡/背风坡 NDVI 均值和标准差
+    
+    参数:
+    out_path: 输出 Excel 路径
+    ndvi_path: NDVI 栅格路径
+    dem_path: DEM 栅格路径
+    aspect_path: 迎背风坡二值栅格路径
+    """
     # 加载已计算结果
     done_set, done_df = load_checkpoint(out_path)
 
@@ -180,9 +191,8 @@ if __name__ == '__main__':
     client = Client(cluster)
     print(f'Dask dashboard: {client.dashboard_link}')
 
-    # 检索
-    wildcard = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Minjiang\NDVI\Yearly\NDVI_*_region.tif"
-    ndvi_paths = glob(wildcard)
+    # 检索逐年NDVI栅格
+    ndvi_paths = glob(ndvi_wildcard)
 
     # 迭代处理 (逐年)
     for ndvi_path in ndvi_paths:
