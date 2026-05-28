@@ -14,26 +14,24 @@ This script is used to 在4km河道buffer内的3km VAI上做迎背风海拔阈�
 
 import math
 import os
+from pathlib import Path
 import time
 import warnings
-from pathlib import Path
 
 import matplotlib.pyplot as plt
+from matplotlib.colors import TwoSlopeNorm
 import numpy as np
 import pandas as pd
-import rasterio as rio
-import shapefile
-from matplotlib.colors import TwoSlopeNorm
 from pyproj import CRS, Transformer
+import rasterio as rio
 from rasterio.transform import xy
 from scipy.spatial import cKDTree
+import shapefile
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 warnings.filterwarnings("ignore")
 
-# ============================================================
 # 0. Configuration
-# ============================================================
 BASE = r"E:\GeoProjects\dry_hot_valley"
 
 VAI_PATH = os.path.join(BASE, r"Daduhe\VAI\VAI_3km_buffer.tif")
@@ -90,10 +88,9 @@ plt.rcParams.update({
 })
 
 
-# ============================================================
 # 1. Geometry & loading
-# ============================================================
 def iter_parts(shape):
+    """从 pyshp shape 对象中逐段 yield 折线顶点坐标"""
     parts = list(shape.parts) + [len(shape.points)]
     for i in range(len(parts) - 1):
         pts = shape.points[parts[i]:parts[i + 1]]
@@ -102,6 +99,7 @@ def iter_parts(shape):
 
 
 def densify_polyline(points, step_m=CENTERLINE_SAMPLE_STEP_M):
+    """按指定步长加密折线，返回带累积距离的采样点列表"""
     rows = []
     cum_dist = 0.0
     for p0, p1 in zip(points[:-1], points[1:]):
@@ -122,6 +120,7 @@ def densify_polyline(points, step_m=CENTERLINE_SAMPLE_STEP_M):
 
 
 def get_centerline_crs():
+    """从中心线 shapefile 的 .prj 文件读取 CRS"""
     prj_path = Path(CENTERLINE_PATH).with_suffix(".prj")
     return CRS.from_wkt(prj_path.read_text(errors="ignore"))
 
@@ -222,10 +221,9 @@ def load_buffer_grid(centerline):
     return grid
 
 
-# ============================================================
 # 2. Binning, LOWESS, threshold
-# ============================================================
 def bin_stats(df, axis_col, bin_step):
+    """按指定轴列和步长分箱，统计各箱内 VAI 的均值、中位数、标准差等"""
     values = df[axis_col].to_numpy()
     if len(values) == 0:
         return pd.DataFrame()
@@ -256,6 +254,7 @@ def bin_stats(df, axis_col, bin_step):
 
 
 def lowess_cells(df, x_col, x_min=None, x_max=None, frac=LOWESS_FRAC):
+    """对 cell-level 数据执行 LOWESS 平滑，返回排序后的 (x, y) 平滑值"""
     valid = np.isfinite(df[x_col]) & np.isfinite(df["VAI"])
     if x_min is not None:
         valid &= df[x_col] >= x_min
@@ -275,6 +274,7 @@ def lowess_cells(df, x_col, x_min=None, x_max=None, frac=LOWESS_FRAC):
 
 
 def first_pos2neg_crossing(x, y):
+    """查找 LOWESS 曲线上 VAI 由正转负的第一个零穿越点海拔"""
     if len(x) < 2:
         return np.nan
     for i in range(len(x) - 1):
@@ -311,10 +311,13 @@ def bootstrap_threshold(df, axis_col, x_min=None, x_max=None,
     )
 
 
-# ============================================================
 # 3. Plot
-# ============================================================
 def plot_threshold(grid, abs_bin, rel_bin, summary, centerline_parts):
+    """绘制单河谷的 4 面板阈值诊断图
+    
+    四面板: A. VAI-绝对海拔, B. VAI-相对高差,
+    C. 分箱样本量, D. 3 km VAI 空间分布叠加中心线
+    """
     fig = plt.figure(figsize=(11.5, 8.0))
     gs = fig.add_gridspec(2, 2, width_ratios=[1, 1], height_ratios=[1, 1],
                            wspace=0.26, hspace=0.32)
@@ -447,9 +450,7 @@ def plot_threshold(grid, abs_bin, rel_bin, summary, centerline_parts):
     plt.close(fig)
 
 
-# ============================================================
 # 4. Main
-# ============================================================
 if __name__ == "__main__":
     t_start = time.time()
     print("=" * 72)
