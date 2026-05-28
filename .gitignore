@@ -206,3 +206,6 @@ secrets.json
 /.arts/settings.json
 .codeartsdoer/
 .codegraph/
+
+# claude
+CLAUDE.md
