@@ -26,21 +26,19 @@ import time
 import warnings
 
 import numpy as np
-import rasterio as rio
-import shapefile
 from pyproj import CRS, Transformer
+import rasterio as rio
 from rasterio.features import rasterize
 from rasterio.transform import from_origin
 from rasterio.windows import Window
 from scipy.stats import ttest_ind
+import shapefile
 from shapely.geometry import LineString
 from shapely.ops import unary_union
 
 warnings.filterwarnings("ignore")
 
-# ============================================================
 # 0. Configuration
-# ============================================================
 NDVI_PATH = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\NDVI\Interannual\NDVI_interannual_mean_region.tif"
 DIRECTION_PATH = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\geo_factor\windward_leeward_region.tif"
 DEM_PATH = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\geo_factor\elevation_10m_projected_region.tif"
@@ -76,10 +74,9 @@ NDVI_MIN = 0.1
 MIN_VALLEY_PIXELS = MIN_PIXEL_THRESHOLD * 2
 
 
-# ============================================================
 # 1. Helpers
-# ============================================================
 def iter_parts(shape):
+    """从 pyshp shape 对象中逐段 yield 折线顶点坐标"""
     parts = list(shape.parts) + [len(shape.points)]
     for i in range(len(parts) - 1):
         pts = shape.points[parts[i]:parts[i + 1]]
@@ -125,9 +122,7 @@ def build_buffer_mask_10m(lines, buffer_m, ref_height, ref_width, ref_transform)
     return mask
 
 
-# ============================================================
 # 2. Main
-# ============================================================
 if __name__ == "__main__":
     t_start = time.time()
 

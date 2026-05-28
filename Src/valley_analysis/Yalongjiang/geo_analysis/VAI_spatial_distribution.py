@@ -32,18 +32,17 @@ This script is used to 计算迎风坡与背风坡的植被不对称指数(VAI)�
 
 import os
 import time
+import warnings
+
 import numpy as np
 import rasterio as rio
 from rasterio.transform import from_origin
 from rasterio.windows import Window
 from scipy.stats import ttest_ind
-import warnings
 
 warnings.filterwarnings('ignore')
 
-# ============================================================
 # 0. Configuration
-# ============================================================
 ndvi_mean_path = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\NDVI\Interannual\NDVI_interannual_mean_region.tif"
 direction_path = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\geo_factor\windward_leeward_region.tif"
 dem_path = r"E:\GeoProjects\dry_hot_valley\valley_analysis\Yalongjiang\geo_factor\elevation_10m_projected_region.tif"
@@ -71,9 +70,7 @@ MIN_PIXEL_THRESHOLD = 15
 # NDVI有效性阈值 (参考 Yin 2023: NDVI > 0.1)
 NDVI_MIN = 0.1
 
-# ============================================================
 # 1. Read raster metadata
-# ============================================================
 if __name__ == '__main__':
     t_start = time.time()
 
@@ -110,18 +107,14 @@ if __name__ == '__main__':
         GRID_SIZE_M,                         # Y像素高度
     )
 
-    # ============================================================
     # 2. 初始化输出数组
-    # ============================================================
     vai = np.full((n_grid_rows, n_grid_cols), np.nan, dtype=np.float32)
     pval = np.full((n_grid_rows, n_grid_cols), np.nan, dtype=np.float32)
     ww_mean_arr = np.full((n_grid_rows, n_grid_cols), np.nan, dtype=np.float32)
     lw_mean_arr = np.full((n_grid_rows, n_grid_cols), np.nan, dtype=np.float32)
     dem_arr = np.full((n_grid_rows, n_grid_cols), np.nan, dtype=np.float32)
 
-    # ============================================================
     # 3. 逐网格计算
-    # ============================================================
     print("\nProcessing grids...")
     src_ndvi = rio.open(ndvi_mean_path, 'r')
     src_dir = rio.open(direction_path, 'r')
@@ -197,9 +190,7 @@ if __name__ == '__main__':
     src_dir.close()
     src_dem.close()
 
-    # ============================================================
     # 4. 输出GeoTIFF
-    # ============================================================
     out_profile = {
         'driver': 'GTiff',
         'dtype': 'float32',
@@ -226,9 +217,7 @@ if __name__ == '__main__':
             dst.write(data, 1)
         print(f"  {name} → {path}")
 
-    # ============================================================
     # 5. Summary
-    # ============================================================
     elapsed = time.time() - t_start
     vai_valid = vai[np.isfinite(vai)]
     pval_valid = pval[np.isfinite(pval)]
